@@ -6,12 +6,17 @@ let _name_from_type_name type_name =
 module Str = struct
   let value_expr_from_core_type ~loc {ptyp_desc; ptyp_loc; _} =
     match ptyp_desc with
+    | Ptyp_constr ({txt = Lident "bool"; _}, _) -> [%expr false]
     | Ptyp_constr ({txt = Lident "int"; _}, _) -> [%expr 0]
+    | Ptyp_constr ({txt = Lident "int32"; _}, _) -> [%expr 0l]
+    | Ptyp_constr ({txt = Lident "int64"; _}, _) -> [%expr 0L]
+    | Ptyp_constr ({txt = Lident "nativeint"; _}, _) -> [%expr 0n]
     | Ptyp_constr ({txt = Lident "float"; _}, _) -> [%expr 0.]
     | Ptyp_constr ({txt = Lident "char"; _}, _) -> [%expr '\x00']
     | Ptyp_constr ({txt = Lident "string"; _}, _) -> [%expr ""]
     | Ptyp_constr ({txt = Lident "option"; _}, _) -> [%expr None]
     | Ptyp_constr ({txt = Lident "list"; _}, _) -> [%expr []]
+    | Ptyp_constr ({txt = Lident "array"; _}, _) -> [%expr [||]]
     | _ -> Location.raise_errorf ~loc:ptyp_loc "ppx_factory: default: unhandled type"
 
   let value_expr_from_manifest ~ptype_loc ~loc manifest =
