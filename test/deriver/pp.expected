@@ -1,0 +1,12 @@
+type _int = int[@@deriving default]
+let default__int = 0
+type _float = float[@@deriving default]
+let default__float = 0.
+type _char = char[@@deriving default]
+let default__char = '\000'
+type _string = string[@@deriving default]
+let default__string = ""
+type _option = int option[@@deriving default]
+let default__option = None
+type _list = int list[@@deriving default]
+let default__list = []

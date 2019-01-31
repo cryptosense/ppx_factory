@@ -1,0 +1,6 @@
+type _int = int [@@deriving default]
+type _float = float [@@deriving default]
+type _char = char [@@deriving default]
+type _string = string [@@deriving default]
+type _option = int option [@@deriving default]
+type _list = int list [@@deriving default]
