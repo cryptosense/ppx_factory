@@ -16,6 +16,16 @@ type 'a _option = 'a option [@@deriving default]
 type 'a _list = 'a list [@@deriving default]
 type 'a _array = 'a array [@@deriving default]
 
+module A = struct
+  module B = struct
+    type some_type = int
+    let default_some_type = 12
+  end
+end
+
+type other_type = A.B.some_type
+[@@deriving default]
+
 module type DEFAULT = sig
   type t
   [@@deriving default]

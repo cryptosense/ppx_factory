@@ -4,6 +4,14 @@ let _name_from_type_name type_name =
   Printf.sprintf "default%s" @@ Util.suffix_from_type_name type_name
 
 module Str = struct
+  let value_expr_from_lident ~loc {txt; loc = err_loc} =
+    match txt with
+    | Lident name ->
+      Ast_builder.Default.pexp_ident ~loc {txt = Lident (_name_from_type_name name); loc}
+    | Ldot (lident, last) ->
+      Ast_builder.Default.pexp_ident ~loc {txt = Ldot (lident, _name_from_type_name last); loc}
+    | Lapply _ -> Location.raise_errorf ~loc:err_loc "ppx_factory: default: unhandled longident"
+
   let value_expr_from_core_type ~loc {ptyp_desc; ptyp_loc; _} =
     match ptyp_desc with
     | Ptyp_constr ({txt = Lident "bool"; _}, _) -> [%expr false]
@@ -17,6 +25,7 @@ module Str = struct
     | Ptyp_constr ({txt = Lident "option"; _}, _) -> [%expr None]
     | Ptyp_constr ({txt = Lident "list"; _}, _) -> [%expr []]
     | Ptyp_constr ({txt = Lident "array"; _}, _) -> [%expr [||]]
+    | Ptyp_constr (lident, _) -> value_expr_from_lident ~loc lident
     | _ -> Location.raise_errorf ~loc:ptyp_loc "ppx_factory: default: unhandled type"
 
   let value_expr_from_manifest ~ptype_loc ~loc manifest =
