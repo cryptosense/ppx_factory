@@ -26,11 +26,11 @@ type _string = string[@@deriving default]
 let default__string = ""
 type string_t = String.t[@@deriving default]
 let default_string_t = ""
-type _option = int option[@@deriving default]
+type 'a _option = 'a option[@@deriving default]
 let default__option = None
-type _list = int list[@@deriving default]
+type 'a _list = 'a list[@@deriving default]
 let default__list = []
-type _array = int array[@@deriving default]
+type 'a _array = 'a array[@@deriving default]
 let default__array = [||]
 module type DEFAULT  =
   sig

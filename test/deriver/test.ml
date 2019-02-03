@@ -12,9 +12,9 @@ type _char = char [@@deriving default]
 type char_t = Char.t [@@deriving default]
 type _string = string [@@deriving default]
 type string_t = String.t [@@deriving default]
-type _option = int option [@@deriving default]
-type _list = int list [@@deriving default]
-type _array = int array [@@deriving default]
+type 'a _option = 'a option [@@deriving default]
+type 'a _list = 'a list [@@deriving default]
+type 'a _array = 'a array [@@deriving default]
 
 module type DEFAULT = sig
   type t
