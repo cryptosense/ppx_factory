@@ -15,3 +15,20 @@ type string_t = String.t [@@deriving default]
 type _option = int option [@@deriving default]
 type _list = int list [@@deriving default]
 type _array = int array [@@deriving default]
+
+module type DEFAULT = sig
+  type t
+  [@@deriving default]
+  type simple
+  [@@deriving default]
+  type with_manifest = int
+  [@@deriving default]
+  type private_ = private int
+  [@@deriving default]
+  type ('a, 'b) parametrized
+  [@@deriving default]
+  type variant = A of int | B of string
+  [@@deriving default]
+  type record = {a : int; b : string}
+  [@@deriving default]
+end

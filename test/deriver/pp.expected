@@ -32,3 +32,24 @@ type _list = int list[@@deriving default]
 let default__list = []
 type _array = int array[@@deriving default]
 let default__array = [||]
+module type DEFAULT  =
+  sig
+    type t[@@deriving default]
+    val default : default
+    type simple[@@deriving default]
+    val default_simple : default_simple
+    type with_manifest = int[@@deriving default]
+    val default_with_manifest : default_with_manifest
+    type private_ = private int[@@deriving default]
+    val default_private_ : default_private_
+    type ('a, 'b) parametrized[@@deriving default]
+    val default_parametrized : ('a, 'b) default_parametrized
+    type variant =
+      | A of int 
+      | B of string [@@deriving default]
+    val default_variant : default_variant
+    type record = {
+      a: int ;
+      b: string }[@@deriving default]
+    val default_record : default_record
+  end

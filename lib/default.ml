@@ -49,4 +49,23 @@ module Str = struct
     List.rev (List.rev_map (from_td ~loc) tds)
 end
 
+module Sig = struct
+  let constr_from_type_param ~loc (core_type, _variance) =
+    {core_type with ptyp_loc = loc; ptyp_attributes = []}
+
+  let from_td ~loc {ptype_name; ptype_params; _} =
+    let name_str = _name_from_type_name ptype_name.txt in
+    let name = {txt = name_str; loc} in
+    let li_name = {txt = Lident name_str; loc} in
+    let constr = List.map (constr_from_type_param ~loc) ptype_params in
+    let type_ = Ast_builder.Default.ptyp_constr ~loc li_name constr in
+    let value_description = Ast_builder.Default.value_description ~loc ~name ~type_ ~prim:[] in
+    Ast_builder.Default.psig_value ~loc value_description
+
+  let from_type_decl ~loc ~path:_ (_rec_flag, tds) =
+    List.rev (List.rev_map (from_td ~loc) tds)
+end
+
 let from_str_type_decl = Deriving.Generator.make_noarg Str.from_type_decl
+
+let from_sig_type_decl = Deriving.Generator.make_noarg Sig.from_type_decl
