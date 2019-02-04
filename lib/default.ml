@@ -54,8 +54,7 @@ module Str = struct
     Ast_builder.Default.pstr_value ~loc Nonrecursive [value_binding]
 
 
-  let from_type_decl ~loc ~path:_ (_rec_flag, tds) =
-    List.rev (List.rev_map (from_td ~loc) tds)
+  let from_type_decl ~loc ~path:_ (_rec_flag, tds) = List.map (from_td ~loc) tds
 end
 
 module Sig = struct
@@ -71,8 +70,7 @@ module Sig = struct
     let value_description = Ast_builder.Default.value_description ~loc ~name ~type_ ~prim:[] in
     Ast_builder.Default.psig_value ~loc value_description
 
-  let from_type_decl ~loc ~path:_ (_rec_flag, tds) =
-    List.rev (List.rev_map (from_td ~loc) tds)
+  let from_type_decl ~loc ~path:_ (_rec_flag, tds) = List.map (from_td ~loc) tds
 end
 
 let from_str_type_decl = Deriving.Generator.make_noarg Str.from_type_decl
