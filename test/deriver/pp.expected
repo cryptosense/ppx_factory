@@ -32,6 +32,8 @@ type 'a _list = 'a list[@@deriving default]
 let default__list = []
 type 'a _array = 'a array[@@deriving default]
 let default__array = [||]
+type tuple = (int * string * int list)[@@deriving default]
+let default_tuple = (0, "", [])
 module A =
   struct
     module B = struct type some_type = int

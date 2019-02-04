@@ -12,7 +12,7 @@ module Str = struct
       Ast_builder.Default.pexp_ident ~loc {txt = Ldot (lident, _name_from_type_name last); loc}
     | Lapply _ -> Location.raise_errorf ~loc:err_loc "ppx_factory: default: unhandled longident"
 
-  let value_expr_from_core_type ~loc {ptyp_desc; ptyp_loc; _} =
+  let rec value_expr_from_core_type ~loc {ptyp_desc; ptyp_loc; _} =
     match ptyp_desc with
     | Ptyp_constr ({txt = Lident "bool"; _}, _) -> [%expr false]
     | Ptyp_constr ({txt = Lident "int"; _}, _) -> [%expr 0]
@@ -26,6 +26,9 @@ module Str = struct
     | Ptyp_constr ({txt = Lident "list"; _}, _) -> [%expr []]
     | Ptyp_constr ({txt = Lident "array"; _}, _) -> [%expr [||]]
     | Ptyp_constr (lident, _) -> value_expr_from_lident ~loc lident
+    | Ptyp_tuple types ->
+      let expr_list = List.map (value_expr_from_core_type ~loc) types in
+      Ast_builder.Default.pexp_tuple ~loc expr_list
     | _ -> Location.raise_errorf ~loc:ptyp_loc "ppx_factory: default: unhandled type"
 
   let value_expr_from_manifest ~ptype_loc ~loc manifest =

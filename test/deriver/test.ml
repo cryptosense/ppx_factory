@@ -15,6 +15,7 @@ type string_t = String.t [@@deriving default]
 type 'a _option = 'a option [@@deriving default]
 type 'a _list = 'a list [@@deriving default]
 type 'a _array = 'a array [@@deriving default]
+type tuple = int * string * int list [@@deriving default]
 
 module A = struct
   module B = struct
