@@ -65,11 +65,10 @@ module Sig = struct
     {core_type with ptyp_loc = loc; ptyp_attributes = []}
 
   let from_td ~loc {ptype_name; ptype_params; _} =
-    let name_str = _name_from_type_name ptype_name.txt in
-    let name = {txt = name_str; loc} in
-    let lident = {txt = Lident name_str; loc} in
+    let name = {txt = _name_from_type_name ptype_name.txt; loc} in
     let constr = List.map (constr_from_type_param ~loc) ptype_params in
-    let type_ = Ast_builder.Default.ptyp_constr ~loc lident constr in
+    let type_lident = {txt = Lident ptype_name.txt; loc} in
+    let type_ = Ast_builder.Default.ptyp_constr ~loc type_lident constr in
     let value_description = Ast_builder.Default.value_description ~loc ~name ~type_ ~prim:[] in
     Ast_builder.Default.psig_value ~loc value_description
 

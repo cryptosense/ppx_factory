@@ -44,21 +44,21 @@ let default_other_type = A.B.default_some_type
 module type DEFAULT  =
   sig
     type t[@@deriving default]
-    val default : default
+    val default : t
     type simple[@@deriving default]
-    val default_simple : default_simple
+    val default_simple : simple
     type with_manifest = int[@@deriving default]
-    val default_with_manifest : default_with_manifest
+    val default_with_manifest : with_manifest
     type private_ = private int[@@deriving default]
-    val default_private_ : default_private_
+    val default_private_ : private_
     type ('a, 'b) parametrized[@@deriving default]
-    val default_parametrized : ('a, 'b) default_parametrized
+    val default_parametrized : ('a, 'b) parametrized
     type variant =
       | A of int 
       | B of string [@@deriving default]
-    val default_variant : default_variant
+    val default_variant : variant
     type record = {
       a: int ;
       b: string }[@@deriving default]
-    val default_record : default_record
+    val default_record : record
   end
