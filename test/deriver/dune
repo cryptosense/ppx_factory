@@ -21,9 +21,6 @@
 (test
   (name test)
   (modules test)
-  (libraries
-    yojson
-  )
   (preprocess
     (pps
       ppx_factory
