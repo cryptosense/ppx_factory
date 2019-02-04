@@ -23,22 +23,14 @@ module A = struct
   end
 end
 
-type other_type = A.B.some_type
-[@@deriving default]
+type other_type = A.B.some_type [@@deriving default]
 
 module type DEFAULT = sig
-  type t
-  [@@deriving default]
-  type simple
-  [@@deriving default]
-  type with_manifest = int
-  [@@deriving default]
-  type private_ = private int
-  [@@deriving default]
-  type ('a, 'b) parametrized
-  [@@deriving default]
-  type variant = A of int | B of string
-  [@@deriving default]
-  type record = {a : int; b : string}
-  [@@deriving default]
+  type t [@@deriving default]
+  type simple [@@deriving default]
+  type with_manifest = int [@@deriving default]
+  type private_ = private int [@@deriving default]
+  type ('a, 'b) parametrized [@@deriving default]
+  type variant = A of int | B of string [@@deriving default]
+  type record = {a : int; b : string} [@@deriving default]
 end
