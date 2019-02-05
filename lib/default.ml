@@ -28,6 +28,7 @@ let rec expr_from_core_type ~loc {ptyp_desc; ptyp_loc; _} =
   | Ptyp_tuple types ->
     let expr_list = List.map (expr_from_core_type ~loc) types in
     Ast_builder.Default.pexp_tuple ~loc expr_list
+  | Ptyp_var _ -> Raise.errorf ~loc:ptyp_loc "can't derive default for unspecified type" 
   | _ -> Raise.errorf ~loc:ptyp_loc "can't derive default value from this type"
 
 module Str = struct
