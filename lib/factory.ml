@@ -3,43 +3,93 @@ open Ppxlib
 let _name_from_type_name type_name =
   Printf.sprintf "factory%s" @@ Util.suffix_from_type_name type_name
 
+let _name_from_type_and_ctr_name ~type_name ~ctr_name =
+  let base_factory_name = _name_from_type_name type_name in
+  Printf.sprintf "%s_%s" base_factory_name (String.lowercase_ascii ctr_name)
+
 module Str = struct
-  let field_name_and_default ~loc {pld_name; pld_type; _} =
-    let name = pld_name.txt in
-    let default = Default.expr_from_core_type ~loc pld_type in
-    (name, default)
-
-  let fixed_field_binding ~loc name =
-    let lident = {txt = Lident name; loc} in
-    (lident, Ast_builder.Default.pexp_ident ~loc lident)
-
-  let fun_expr_from_labels ~loc labels =
-    let names_and_defaults = List.map (field_name_and_default ~loc) labels in
-    let fields_bindings =
-      List.map (fun (name, _) -> fixed_field_binding ~loc name) names_and_defaults
-    in
-    let return_expr = Ast_builder.Default.pexp_record ~loc fields_bindings None in
-    List.fold_right
-      ( fun (name, default) acc ->
+  let factory_fun_expr ~loc ~return_expr ~arg_names ~defaults =
+    List.fold_right2
+      ( fun name default acc ->
           let arg_label = Optional name in
           let default_value = Some default in
           let pattern = Ast_builder.Default.ppat_var ~loc {txt = name; loc} in
           Ast_builder.Default.pexp_fun ~loc arg_label default_value pattern acc
       )
-      names_and_defaults
+      arg_names
+      defaults
       [%expr fun () -> [%e return_expr]]
+
+  let arg_names_from_labels labels =
+    List.map (fun {pld_name; _} -> pld_name.txt) labels
+
+  let defaults_from_label_decl ~loc labels =
+    List.map (fun {pld_type; _} -> Default.expr_from_core_type ~loc pld_type) labels
+
+  let fixed_field_binding ~loc name =
+    let lident = {txt = Lident name; loc} in
+    (lident, Util.Expr.var ~loc name)
+
+  let fun_expr_from_labels ~loc ?ctr_name labels =
+    let arg_names = arg_names_from_labels labels in
+    let fields_bindings = List.map (fixed_field_binding ~loc) arg_names in
+    let record_expr = Ast_builder.Default.pexp_record ~loc fields_bindings None in
+    let return_expr =
+      match ctr_name with
+      | None -> record_expr
+      | Some ctr_name -> Util.Expr.ctr ~loc ~ctr_name (Some record_expr)
+    in
+    let defaults = defaults_from_label_decl ~loc labels in
+    factory_fun_expr ~loc ~return_expr ~arg_names ~defaults
+
+  let from_labels ~loc ~factory_name ?ctr_name labels =
+    let pat = Ast_builder.Default.ppat_var ~loc {txt = factory_name; loc} in
+    let expr = fun_expr_from_labels ~loc ?ctr_name labels in
+    let value_binding = Ast_builder.Default.value_binding ~loc ~pat ~expr in
+    Ast_builder.Default.pstr_value ~loc Nonrecursive [value_binding]
 
   let from_record ~loc ~type_name ~labels =
     let factory_name = _name_from_type_name type_name in
-    let pat = Ast_builder.Default.ppat_var ~loc {txt = factory_name; loc} in
-    let expr = fun_expr_from_labels ~loc labels in
-    let value_binding = Ast_builder.Default.value_binding ~loc ~pat ~expr in
-    [Ast_builder.Default.pstr_value ~loc Nonrecursive [value_binding]]
+    [from_labels ~loc ~factory_name labels]
 
-  let from_td ~loc {ptype_name = {txt = type_name; _}; ptype_kind; ptype_loc; _} =
+  let arg_names_from_tuple types =
+    List.mapi (fun i _ -> Printf.sprintf "tup%d" i) types
+
+  let defaults_from_tuple ~loc types =
+    List.map (fun core_type -> Default.expr_from_core_type ~loc core_type) types
+
+  let fun_expr_from_ctr_tuple ~loc ~ctr_name types =
+    let arg_names = arg_names_from_tuple types in
+    let tuple_bindings = List.map (Util.Expr.var ~loc) arg_names in
+    let ctr_arg_expr =
+      match tuple_bindings with
+      | [] -> None
+      | [expr] -> Some expr
+      | _ -> Some (Ast_builder.Default.pexp_tuple ~loc tuple_bindings)
+    in
+    let return_expr = Util.Expr.ctr ~loc ~ctr_name ctr_arg_expr in
+    let defaults = defaults_from_tuple ~loc types in
+    factory_fun_expr ~loc ~return_expr ~arg_names ~defaults
+
+  let from_ctr_tuple ~loc ~factory_name ~ctr_name types =
+    let pat = Ast_builder.Default.ppat_var ~loc {txt = factory_name; loc} in
+    let expr = fun_expr_from_ctr_tuple ~loc ~ctr_name types in
+    let value_binding = Ast_builder.Default.value_binding ~loc ~pat ~expr in
+    Ast_builder.Default.pstr_value ~loc Nonrecursive [value_binding]
+
+  let from_ctr_record ~loc ~factory_name ~ctr_name labels =
+    from_labels ~loc ~factory_name ~ctr_name labels
+
+  let from_constructor ~loc ~type_name {pcd_name = {txt = ctr_name; _}; pcd_args; _} =
+    let factory_name = _name_from_type_and_ctr_name ~type_name ~ctr_name in 
+    match pcd_args with
+    | Pcstr_tuple types -> from_ctr_tuple ~loc ~factory_name ~ctr_name types
+    | Pcstr_record labels -> from_ctr_record ~loc ~factory_name ~ctr_name labels
+
+  let from_td ~loc {ptype_name = {txt = type_name; _}; ptype_kind; _} =
     match ptype_kind with
     | Ptype_record labels -> from_record ~loc ~type_name ~labels
-    | Ptype_variant _ -> Raise.Factory.errorf ~loc:ptype_loc "can't derive from variant type yet"
+    | Ptype_variant constructors -> List.map (from_constructor ~type_name ~loc) constructors
     | Ptype_abstract -> Raise.Factory.unhandled_type_kind ~loc "abstract"
     | Ptype_open -> Raise.Factory.unhandled_type_kind ~loc "open"
 

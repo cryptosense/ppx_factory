@@ -7,3 +7,15 @@ type simple_record =
   other_field: A.B.t }[@@deriving factory]
 let factory_simple_record ?(int_field= 0)  ?(string_field= "") 
   ?(other_field= A.B.default)  () = { int_field; string_field; other_field }
+type simple_variant =
+  | A 
+  | B of int 
+  | C of int * string 
+  | D of {
+  int_field: int ;
+  string_field: string } [@@deriving factory]
+let factory_simple_variant_a () = A
+let factory_simple_variant_b ?(tup0= 0)  () = B tup0
+let factory_simple_variant_c ?(tup0= 0)  ?(tup1= "")  () = C (tup0, tup1)
+let factory_simple_variant_d ?(int_field= 0)  ?(string_field= "")  () =
+  D { int_field; string_field }

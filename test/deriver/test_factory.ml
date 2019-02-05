@@ -11,3 +11,10 @@ type simple_record =
   ; other_field : A.B.t
   }
 [@@deriving factory]
+
+type simple_variant =
+  | A
+  | B of int
+  | C of int * string
+  | D of {int_field : int; string_field : string}
+[@@deriving factory]
