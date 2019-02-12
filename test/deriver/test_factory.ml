@@ -18,3 +18,10 @@ type simple_variant =
   | C of int * string
   | D of {int_field : int; string_field : string}
 [@@deriving factory]
+
+type record_with_options =
+  { non_optional : int
+  ; optional : int option
+  ; nested : int option option
+  }
+[@@deriving factory]

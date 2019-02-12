@@ -12,19 +12,23 @@ module Str = struct
     List.fold_right2
       ( fun name default acc ->
           let arg_label = Optional name in
-          let default_value = Some default in
           let pattern = Ast_builder.Default.ppat_var ~loc {txt = name; loc} in
-          Ast_builder.Default.pexp_fun ~loc arg_label default_value pattern acc
+          Ast_builder.Default.pexp_fun ~loc arg_label default pattern acc
       )
       arg_names
       defaults
       [%expr fun () -> [%e return_expr]]
 
+  let default_arg_from_core_type ~loc core_type =
+    match core_type with
+    | [%type: [%t? _] option] -> None
+    | _ -> Some (Default.expr_from_core_type ~loc core_type)
+
   let arg_names_from_labels labels =
     List.map (fun {pld_name; _} -> pld_name.txt) labels
 
   let defaults_from_label_decl ~loc labels =
-    List.map (fun {pld_type; _} -> Default.expr_from_core_type ~loc pld_type) labels
+    List.map (fun {pld_type; _} -> default_arg_from_core_type ~loc pld_type) labels
 
   let fixed_field_binding ~loc name =
     let lident = {txt = Lident name; loc} in
@@ -56,7 +60,7 @@ module Str = struct
     List.mapi (fun i _ -> Printf.sprintf "tup%d" i) types
 
   let defaults_from_tuple ~loc types =
-    List.map (fun core_type -> Default.expr_from_core_type ~loc core_type) types
+    List.map (fun core_type -> default_arg_from_core_type ~loc core_type) types
 
   let fun_expr_from_ctr_tuple ~loc ~ctr_name types =
     let arg_names = arg_names_from_tuple types in
