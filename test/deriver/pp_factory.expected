@@ -19,3 +19,10 @@ let factory_simple_variant_b ?(tup0= 0)  () = B tup0
 let factory_simple_variant_c ?(tup0= 0)  ?(tup1= "")  () = C (tup0, tup1)
 let factory_simple_variant_d ?(int_field= 0)  ?(string_field= "")  () =
   D { int_field; string_field }
+type record_with_options =
+  {
+  non_optional: int ;
+  optional: int option ;
+  nested: int option option }[@@deriving factory]
+let factory_record_with_options ?(non_optional= 0)  ?optional  ?nested  () =
+  { non_optional; optional; nested }
