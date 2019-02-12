@@ -60,14 +60,9 @@ module Str = struct
 end
 
 module Sig = struct
-  let constr_from_type_param ~loc (core_type, _variance) =
-    {core_type with ptyp_loc = loc; ptyp_attributes = []}
-
-  let from_td ~loc {ptype_name; ptype_params; _} =
-    let name = {txt = _name_from_type_name ptype_name.txt; loc} in
-    let constr = List.map (constr_from_type_param ~loc) ptype_params in
-    let type_lident = {txt = Lident ptype_name.txt; loc} in
-    let type_ = Ast_builder.Default.ptyp_constr ~loc type_lident constr in
+  let from_td ~loc td =
+    let name = {txt = _name_from_type_name td.ptype_name.txt; loc} in
+    let type_ = Util.core_type_from_type_decl ~loc td in
     let value_description = Ast_builder.Default.value_description ~loc ~name ~type_ ~prim:[] in
     Ast_builder.Default.psig_value ~loc value_description
 
