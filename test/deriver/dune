@@ -8,25 +8,25 @@
 )
 
 (rule
-  (targets pp_default.actual)
+  (targets pp_default.actual.ml)
   (deps test_default.ml)
   (action (run ./pp.exe -deriving-keep-w32 both --impl %{deps} -o %{targets}))
 )
 
 (alias
   (name runtest)
-  (action (diff pp_default.expected pp_default.actual))
+  (action (diff pp_default.expected.ml pp_default.actual.ml))
 )
 
 (rule
-  (targets pp_factory.actual)
+  (targets pp_factory.actual.ml)
   (deps test_factory.ml)
   (action (run ./pp.exe -deriving-keep-w32 both --impl %{deps} -o %{targets}))
 )
 
 (alias
   (name runtest)
-  (action (diff pp_factory.expected pp_factory.actual))
+  (action (diff pp_factory.expected.ml pp_factory.actual.ml))
 )
 
 (tests
