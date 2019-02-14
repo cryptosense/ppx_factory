@@ -26,6 +26,12 @@ module Types : sig
     ; nested : int option option
     }
   [@@deriving factory]
+
+  type 'a parametrized =
+    { param : 'a option
+    ; non_paramed : string
+    }
+  [@@deriving factory]
 end = struct
   type simple_record =
     { int_field : int
@@ -45,6 +51,12 @@ end = struct
     { non_optional : int
     ; optional : int option
     ; nested : int option option
+    }
+  [@@deriving factory]
+
+  type 'a parametrized =
+    { param : 'a option
+    ; non_paramed : string
     }
   [@@deriving factory]
 end

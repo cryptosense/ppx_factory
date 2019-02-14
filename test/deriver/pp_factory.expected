@@ -31,6 +31,11 @@ module Types :
     val factory_record_with_options :
       ?non_optional:int ->
         ?optional:int -> ?nested:int option -> unit -> record_with_options
+    type 'a parametrized = {
+      param: 'a option ;
+      non_paramed: string }[@@deriving factory]
+    val factory_parametrized :
+      ?param:'a -> ?non_paramed:string -> unit -> 'a parametrized
   end =
   struct
     type simple_record =
@@ -60,4 +65,9 @@ module Types :
       nested: int option option }[@@deriving factory]
     let factory_record_with_options ?(non_optional= 0)  ?optional  ?nested 
       () = { non_optional; optional; nested }
+    type 'a parametrized = {
+      param: 'a option ;
+      non_paramed: string }[@@deriving factory]
+    let factory_parametrized ?param  ?(non_paramed= "")  () =
+      { param; non_paramed }
   end 
