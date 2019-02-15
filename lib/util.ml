@@ -4,6 +4,14 @@ let suffix_from_type_name = function
   | "t" -> ""
   | s -> "_" ^ s
 
+let constr_from_type_param ~loc (core_type, _variance) =
+  {core_type with ptyp_loc = loc; ptyp_attributes = []}
+
+let core_type_from_type_decl ~loc {ptype_name; ptype_params; _} =
+  let constr = List.map (constr_from_type_param ~loc) ptype_params in
+  let type_lident = {txt = Lident ptype_name.txt; loc} in
+  Ast_builder.Default.ptyp_constr ~loc type_lident constr
+
 module Expr = struct
   let var ~loc var_name = Ast_builder.Default.pexp_ident ~loc {txt = Lident var_name; loc}
   let ctr ~loc ~ctr_name expr =

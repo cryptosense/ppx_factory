@@ -7,6 +7,12 @@ let _name_from_type_and_ctr_name ~type_name ~ctr_name =
   let base_factory_name = _name_from_type_name type_name in
   Printf.sprintf "%s_%s" base_factory_name (String.lowercase_ascii ctr_name)
 
+let arg_names_from_labels labels =
+  List.map (fun {pld_name; _} -> pld_name.txt) labels
+
+let arg_names_from_tuple types =
+  List.mapi (fun i _ -> Printf.sprintf "tup%d" i) types
+
 module Str = struct
   let factory_fun_expr ~loc ~return_expr ~arg_names ~defaults =
     List.fold_right2
@@ -23,9 +29,6 @@ module Str = struct
     match core_type with
     | [%type: [%t? _] option] -> None
     | _ -> Some (Default.expr_from_core_type ~loc core_type)
-
-  let arg_names_from_labels labels =
-    List.map (fun {pld_name; _} -> pld_name.txt) labels
 
   let defaults_from_label_decl ~loc labels =
     List.map (fun {pld_type; _} -> default_arg_from_core_type ~loc pld_type) labels
@@ -46,18 +49,18 @@ module Str = struct
     let defaults = defaults_from_label_decl ~loc labels in
     factory_fun_expr ~loc ~return_expr ~arg_names ~defaults
 
-  let from_labels ~loc ~factory_name ?ctr_name labels =
+  let value_binding ~loc ~factory_name ~expr =
     let pat = Ast_builder.Default.ppat_var ~loc {txt = factory_name; loc} in
-    let expr = fun_expr_from_labels ~loc ?ctr_name labels in
     let value_binding = Ast_builder.Default.value_binding ~loc ~pat ~expr in
     Ast_builder.Default.pstr_value ~loc Nonrecursive [value_binding]
+
+  let from_labels ~loc ~factory_name ?ctr_name labels =
+    let expr = fun_expr_from_labels ~loc ?ctr_name labels in
+    value_binding ~loc ~factory_name ~expr
 
   let from_record ~loc ~type_name ~labels =
     let factory_name = _name_from_type_name type_name in
     [from_labels ~loc ~factory_name labels]
-
-  let arg_names_from_tuple types =
-    List.mapi (fun i _ -> Printf.sprintf "tup%d" i) types
 
   let defaults_from_tuple ~loc types =
     List.map (fun core_type -> default_arg_from_core_type ~loc core_type) types
@@ -76,16 +79,14 @@ module Str = struct
     factory_fun_expr ~loc ~return_expr ~arg_names ~defaults
 
   let from_ctr_tuple ~loc ~factory_name ~ctr_name types =
-    let pat = Ast_builder.Default.ppat_var ~loc {txt = factory_name; loc} in
     let expr = fun_expr_from_ctr_tuple ~loc ~ctr_name types in
-    let value_binding = Ast_builder.Default.value_binding ~loc ~pat ~expr in
-    Ast_builder.Default.pstr_value ~loc Nonrecursive [value_binding]
+    value_binding ~loc ~factory_name ~expr
 
   let from_ctr_record ~loc ~factory_name ~ctr_name labels =
     from_labels ~loc ~factory_name ~ctr_name labels
 
   let from_constructor ~loc ~type_name {pcd_name = {txt = ctr_name; _}; pcd_args; _} =
-    let factory_name = _name_from_type_and_ctr_name ~type_name ~ctr_name in 
+    let factory_name = _name_from_type_and_ctr_name ~type_name ~ctr_name in
     match pcd_args with
     | Pcstr_tuple types -> from_ctr_tuple ~loc ~factory_name ~ctr_name types
     | Pcstr_record labels -> from_ctr_record ~loc ~factory_name ~ctr_name labels
@@ -93,7 +94,7 @@ module Str = struct
   let from_td ~loc {ptype_name = {txt = type_name; _}; ptype_kind; _} =
     match ptype_kind with
     | Ptype_record labels -> from_record ~loc ~type_name ~labels
-    | Ptype_variant constructors -> List.map (from_constructor ~type_name ~loc) constructors
+    | Ptype_variant constructors -> List.map (from_constructor ~loc ~type_name) constructors
     | Ptype_abstract -> Raise.Factory.unhandled_type_kind ~loc "abstract"
     | Ptype_open -> Raise.Factory.unhandled_type_kind ~loc "open"
 
@@ -102,8 +103,67 @@ module Str = struct
 end
 
 module Sig = struct
-  let from_type_decl ~loc:_ ~path:_ (_rec_flag, _tds) =
-    []
+  let factory_fun_val ~loc ~return_type ~arg_names ~arg_types =
+    List.fold_right2
+      ( fun name typ acc ->
+          let arg_label = Optional name in
+          Ast_builder.Default.ptyp_arrow ~loc arg_label typ acc
+      )
+      arg_names
+      arg_types
+      [%type: unit -> [%t return_type]]
+
+  let arg_type_from_core_type core_type =
+    match core_type with
+    | [%type: [%t? a] option] -> a
+    | _ -> core_type
+
+  let arg_types_from_labels labels =
+    List.map (fun {pld_type = typ; _} -> arg_type_from_core_type typ) labels
+
+  let fun_val_from_labels ~loc ~return_type labels =
+    let arg_names = arg_names_from_labels labels in
+    let arg_types = arg_types_from_labels labels in
+    factory_fun_val ~loc ~return_type ~arg_names ~arg_types
+
+  let fun_val_from_ctr_tuple ~loc ~return_type types =
+    let arg_names = arg_names_from_tuple types in
+    let arg_types = List.map arg_type_from_core_type types in
+    factory_fun_val ~loc ~return_type ~arg_names ~arg_types
+
+  let value_descr ~loc ~factory_name ~type_ =
+    let name = {txt = factory_name; loc} in
+    let value_description = Ast_builder.Default.value_description ~loc ~name ~type_ ~prim:[] in
+    Ast_builder.Default.psig_value ~loc value_description
+
+  let from_labels ~loc ~factory_name ~return_type labels =
+    let type_ = fun_val_from_labels ~loc ~return_type labels in
+    value_descr ~loc ~factory_name ~type_
+
+  let from_ctr_tuple ~loc ~factory_name ~return_type types =
+    let type_ = fun_val_from_ctr_tuple ~loc ~return_type types in
+    value_descr ~loc ~factory_name ~type_
+
+  let from_record ~loc ~type_name ~return_type ~labels =
+    let factory_name = _name_from_type_name type_name in
+    [from_labels ~loc ~factory_name ~return_type labels]
+
+  let from_constructor ~loc ~type_name ~return_type {pcd_name = {txt = ctr_name; _}; pcd_args; _} =
+    let factory_name = _name_from_type_and_ctr_name ~type_name ~ctr_name in
+    match pcd_args with
+    | Pcstr_tuple types -> from_ctr_tuple ~loc ~factory_name ~return_type types
+    | Pcstr_record labels -> from_labels ~loc ~factory_name ~return_type labels
+
+  let from_td ~loc ({ptype_name = {txt = type_name; _}; ptype_kind; _} as td) =
+    let return_type = Util.core_type_from_type_decl ~loc td in
+    match ptype_kind with
+    | Ptype_record labels -> from_record ~loc ~type_name ~return_type ~labels
+    | Ptype_variant ctors -> List.map (from_constructor ~loc ~type_name ~return_type) ctors
+    | Ptype_abstract -> Raise.Factory.unhandled_type_kind ~loc "abstract"
+    | Ptype_open -> Raise.Factory.unhandled_type_kind ~loc "open"
+
+  let from_type_decl ~loc ~path:_ (_rec_flag, tds) =
+    List.flatten @@ List.map (from_td ~loc) tds
 end
 
 let from_str_type_decl =
