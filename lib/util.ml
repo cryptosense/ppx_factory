@@ -17,3 +17,16 @@ module Expr = struct
   let ctr ~loc ~ctr_name expr =
     Ast_builder.Default.pexp_construct ~loc {txt = Lident ctr_name; loc} expr
 end
+
+module List_ = struct
+  exception Exit
+
+  (* Thanks c-cube's containers *)
+  let all_ok l =
+    let err = ref None in
+    try Ok (List.map (function Ok x -> x | Error e -> err := Some e; raise Exit) l)
+    with Exit ->
+    match !err with
+    | Some e -> Error e
+    | None -> assert false
+end

@@ -28,7 +28,7 @@ module Str = struct
   let default_arg_from_core_type ~loc core_type =
     match core_type with
     | [%type: [%t? _] option] -> None
-    | _ -> Some (Default.expr_from_core_type ~loc core_type)
+    | _ -> Some (Default.expr_from_core_type_exn ~loc core_type)
 
   let defaults_from_label_decl ~loc labels =
     List.map (fun {pld_type; _} -> default_arg_from_core_type ~loc pld_type) labels

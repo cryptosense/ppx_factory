@@ -13,23 +13,31 @@ let expr_from_lident ~loc {txt; loc = err_loc} =
 
 let rec expr_from_core_type ~loc {ptyp_desc; ptyp_loc; _} =
   match ptyp_desc with
-  | Ptyp_constr ({txt = Lident "bool"; _}, _) -> [%expr false]
-  | Ptyp_constr ({txt = Lident "int"; _}, _) -> [%expr 0]
-  | Ptyp_constr ({txt = Lident "int32" | Ldot (Lident "Int32", "t"); _}, _) -> [%expr 0l]
-  | Ptyp_constr ({txt = Lident "int64" | Ldot (Lident "Int64", "t"); _}, _) -> [%expr 0L]
-  | Ptyp_constr ({txt = Lident "nativeint" | Ldot (Lident "Nativeint", "t"); _}, _) -> [%expr 0n]
-  | Ptyp_constr ({txt = Lident "float" | Ldot (Lident "Float", "t"); _}, _) -> [%expr 0.]
-  | Ptyp_constr ({txt = Lident "char" | Ldot (Lident "Char", "t"); _}, _) -> [%expr '\x00']
-  | Ptyp_constr ({txt = Lident "string" | Ldot (Lident "String", "t"); _}, _) -> [%expr ""]
-  | Ptyp_constr ({txt = Lident "option"; _}, _) -> [%expr None]
-  | Ptyp_constr ({txt = Lident "list"; _}, _) -> [%expr []]
-  | Ptyp_constr ({txt = Lident "array"; _}, _) -> [%expr [||]]
-  | Ptyp_constr (lident, _) -> expr_from_lident ~loc lident
+  | Ptyp_constr ({txt = Lident "bool"; _}, _) -> Ok [%expr false]
+  | Ptyp_constr ({txt = Lident "int"; _}, _) -> Ok [%expr 0]
+  | Ptyp_constr ({txt = Lident "int32" | Ldot (Lident "Int32", "t"); _}, _) -> Ok [%expr 0l]
+  | Ptyp_constr ({txt = Lident "int64" | Ldot (Lident "Int64", "t"); _}, _) -> Ok [%expr 0L]
+  | Ptyp_constr ({txt = Lident "nativeint" | Ldot (Lident "Nativeint", "t"); _}, _) -> Ok [%expr 0n]
+  | Ptyp_constr ({txt = Lident "float" | Ldot (Lident "Float", "t"); _}, _) -> Ok [%expr 0.]
+  | Ptyp_constr ({txt = Lident "char" | Ldot (Lident "Char", "t"); _}, _) -> Ok [%expr '\x00']
+  | Ptyp_constr ({txt = Lident "string" | Ldot (Lident "String", "t"); _}, _) -> Ok [%expr ""]
+  | Ptyp_constr ({txt = Lident "option"; _}, _) -> Ok [%expr None]
+  | Ptyp_constr ({txt = Lident "list"; _}, _) -> Ok [%expr []]
+  | Ptyp_constr ({txt = Lident "array"; _}, _) -> Ok [%expr [||]]
+  | Ptyp_constr (lident, _) -> Ok (expr_from_lident ~loc lident)
   | Ptyp_tuple types ->
     let expr_list = List.map (expr_from_core_type ~loc) types in
-    Ast_builder.Default.pexp_tuple ~loc expr_list
-  | Ptyp_var _ -> Raise.errorf ~loc:ptyp_loc "can't derive default for unspecified type" 
-  | _ -> Raise.errorf ~loc:ptyp_loc "can't derive default value from this type"
+    ( match Util.List_.all_ok expr_list with
+      | Ok expr_list -> Ok (Ast_builder.Default.pexp_tuple ~loc expr_list)
+      | Error _ as err -> err
+    )
+  | Ptyp_var _ -> Loc_err.as_result ~loc:ptyp_loc ~msg:"can't derive default for unspecified type" 
+  | _ -> Loc_err.as_result ~loc:ptyp_loc ~msg:"can't derive default value from this type"
+
+let expr_from_core_type_exn ~loc core_type =
+  match expr_from_core_type ~loc core_type with
+  | Ok expr -> expr
+  | Error err -> Loc_err.raise_ err
 
 module Str = struct
   let value_expr_from_manifest ~ptype_loc ~loc manifest =
@@ -38,11 +46,11 @@ module Str = struct
       Raise.Default.errorf
         ~loc:ptype_loc
         "can't derive default for an abstract type without a manifest"
-    | Some typ -> expr_from_core_type ~loc typ
+    | Some typ -> expr_from_core_type_exn ~loc typ
 
   let field_binding ~loc {pld_name; pld_type; _} =
     let lident = {txt = Lident pld_name.txt; loc} in
-    let expr = expr_from_core_type ~loc pld_type in
+    let expr = expr_from_core_type_exn ~loc pld_type in
     (lident, expr)
 
   let value_expr_from_labels ~loc labels =

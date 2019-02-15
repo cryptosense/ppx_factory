@@ -15,3 +15,10 @@ module Expr : sig
   (** Return the contructor expression with the given constructor name and argument expression *)
   val ctr : loc: Location.t -> ctr_name: string -> expression option -> expression
 end
+
+module List_ : sig
+  (** [all_ok l] return [l'] if all elements of [l] are [Ok _] or the first encountered
+      error otherwise.
+  *)
+  val all_ok : ('a, 'b) result list -> ('a list, 'b) result
+end
