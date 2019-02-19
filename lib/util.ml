@@ -30,3 +30,10 @@ module List_ = struct
     | Some e -> Error e
     | None -> assert false
 end
+
+module Result_ = struct
+  let (>|=) res f =
+    match res with
+    | Ok x -> Ok (f x)
+    | Error _ as err -> err
+end

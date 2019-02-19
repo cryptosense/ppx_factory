@@ -40,6 +40,17 @@ type copied = record =
   }
 [@@deriving default]
 
+type variant =
+  | A
+  | B of int
+[@@deriving default]
+
+type ('a, 'b) parametrized_variant =
+  | A of 'a
+  | B of 'b
+  | C
+[@@deriving default]
+
 module type DEFAULT = sig
   type t [@@deriving default]
   type simple [@@deriving default]

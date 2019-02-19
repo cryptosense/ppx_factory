@@ -22,3 +22,7 @@ module List_ : sig
   *)
   val all_ok : ('a, 'b) result list -> ('a list, 'b) result
 end
+
+module Result_ : sig
+  val (>|=) : ('a, 'err) result -> ('a -> 'b) -> ('b, 'err) result
+end

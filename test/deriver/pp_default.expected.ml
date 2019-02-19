@@ -55,6 +55,15 @@ type copied = record =
   other_field: A.B.some_type }[@@deriving default]
 let default_copied =
   { int_field = 0; string_field = ""; other_field = A.B.default_some_type }
+type variant =
+  | A 
+  | B of int [@@deriving default]
+let default_variant = A
+type ('a, 'b) parametrized_variant =
+  | A of 'a 
+  | B of 'b 
+  | C [@@deriving default]
+let default_parametrized_variant = C
 module type DEFAULT  =
   sig
     type t[@@deriving default]

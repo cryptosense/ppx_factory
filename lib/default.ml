@@ -47,24 +47,70 @@ module Str = struct
     | Some typ -> expr_from_core_type_exn ~loc typ
 
   let field_binding ~loc {pld_name; pld_type; _} =
+    let open Util.Result_ in
     let lident = {txt = Lident pld_name.txt; loc} in
-    let expr = expr_from_core_type_exn ~loc pld_type in
+    expr_from_core_type ~loc pld_type >|= fun expr ->
     (lident, expr)
 
   let value_expr_from_labels ~loc labels =
+    let open Util.Result_ in
     let field_bindings = List.map (field_binding ~loc) labels in
+    Util.List_.all_ok field_bindings >|= fun field_bindings ->
     Ast_builder.Default.pexp_record ~loc field_bindings None
+
+  let value_expr_from_labels_exn ~loc labels =
+    Loc_err.ok_or_raise @@ value_expr_from_labels ~loc labels
+
+  let value_expr_from_ctr_tuple ~loc types =
+    let open Util.Result_ in
+    let expr_list = List.map (expr_from_core_type ~loc) types in
+    match expr_list with
+    | [] -> Ok None
+    | [expr] -> expr >|= fun expr -> Some expr
+    | _ ->
+      Util.List_.all_ok expr_list >|= fun expr_list ->
+      Some (Ast_builder.Default.pexp_tuple ~loc expr_list)
+
+  let value_expr_from_ctor ~loc {pcd_name = {txt = ctr_name; _}; pcd_args; _} =
+    let open Util.Result_ in
+    match pcd_args with
+    | Pcstr_record labels ->
+      value_expr_from_labels ~loc labels >|= fun record_expr ->
+      Util.Expr.ctr ~loc ~ctr_name (Some record_expr)
+    | Pcstr_tuple types ->
+      value_expr_from_ctr_tuple ~loc types >|= Util.Expr.ctr ~loc ~ctr_name
+
+  let rec value_expr_from_ctors ~has_params ~ptype_loc ~loc ctors =
+    match ctors with
+    | [] -> Raise.Default.errorf ~loc:ptype_loc "can't derive default for empty variant type"
+    | [last] ->
+      ( match value_expr_from_ctor ~loc last with
+        | Ok expr -> expr
+        | Error err ->
+          if has_params then
+            Raise.Default.errorf ~loc:ptype_loc
+              "can't derive default for this variant \
+               as all constructors have unspecified type arguments"
+          else
+            Loc_err.raise_ err
+      )
+    | ctor::tl ->
+      ( match value_expr_from_ctor ~loc ctor with
+        | Ok expr -> expr
+        | Error _ -> value_expr_from_ctors ~has_params ~ptype_loc ~loc tl
+      )
 
   let value_pat_from_name ~loc type_name =
     let name = _name_from_type_name type_name in
     Ast_builder.Default.ppat_var ~loc {txt = name; loc}
 
-  let from_td ~loc {ptype_name; ptype_kind; ptype_manifest; ptype_loc; _} =
+  let from_td ~loc {ptype_name; ptype_kind; ptype_manifest; ptype_loc; ptype_params; _} =
+    let has_params = ptype_params <> [] in
     let expr =
       match ptype_kind with
       | Ptype_abstract -> value_expr_from_manifest ~ptype_loc ~loc ptype_manifest
-      | Ptype_record labels -> value_expr_from_labels ~loc labels
-      | Ptype_variant _
+      | Ptype_record labels -> value_expr_from_labels_exn ~loc labels
+      | Ptype_variant constructors -> value_expr_from_ctors ~has_params ~ptype_loc ~loc constructors
       | Ptype_open -> Raise.Default.errorf ~loc:ptype_loc "unhandled type kind"
     in
     let pat = value_pat_from_name ~loc ptype_name.txt in
