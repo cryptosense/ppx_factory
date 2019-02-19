@@ -55,10 +55,21 @@ type copied = record =
   other_field: A.B.some_type }[@@deriving default]
 let default_copied =
   { int_field = 0; string_field = ""; other_field = A.B.default_some_type }
-type variant =
+type variant_without_arg =
   | A 
   | B of int [@@deriving default]
-let default_variant = A
+let default_variant_without_arg = A
+type variant_single_arg =
+  | A of int [@@deriving default]
+let default_variant_single_arg = A 0
+type variant_tuple_arg =
+  | A of int * string [@@deriving default]
+let default_variant_tuple_arg = A (0, "")
+type variant_record_arg =
+  | A of {
+  int_field: int ;
+  string_field: string } [@@deriving default]
+let default_variant_record_arg = A { int_field = 0; string_field = "" }
 type ('a, 'b) parametrized_variant =
   | A of 'a 
   | B of 'b 
