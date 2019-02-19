@@ -32,7 +32,7 @@ let rec expr_from_core_type ~loc {ptyp_desc; ptyp_loc; _} =
       | Error _ as err -> err
     )
   | Ptyp_var _ -> Loc_err.as_result ~loc:ptyp_loc ~msg:"can't derive default for unspecified type" 
-  | _ -> Loc_err.as_result ~loc:ptyp_loc ~msg:"can't derive default value from this type"
+  | _ -> Loc_err.as_result ~loc:ptyp_loc ~msg:"can't derive default from this type"
 
 let expr_from_core_type_exn ~loc core_type =
   match expr_from_core_type ~loc core_type with
