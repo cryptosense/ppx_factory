@@ -62,8 +62,8 @@ let default_variant = A
 type ('a, 'b) parametrized_variant =
   | A of 'a 
   | B of 'b 
-  | C [@@deriving default]
-let default_parametrized_variant = C
+  | C of 'b option [@@deriving default]
+let default_parametrized_variant = C None
 module type DEFAULT  =
   sig
     type t[@@deriving default]

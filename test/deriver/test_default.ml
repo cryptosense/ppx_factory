@@ -48,7 +48,7 @@ type variant =
 type ('a, 'b) parametrized_variant =
   | A of 'a
   | B of 'b
-  | C
+  | C of 'b option
 [@@deriving default]
 
 module type DEFAULT = sig
