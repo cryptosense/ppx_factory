@@ -35,9 +35,7 @@ let rec expr_from_core_type ~loc {ptyp_desc; ptyp_loc; _} =
   | _ -> Loc_err.as_result ~loc:ptyp_loc ~msg:"can't derive default from this type"
 
 let expr_from_core_type_exn ~loc core_type =
-  match expr_from_core_type ~loc core_type with
-  | Ok expr -> expr
-  | Error err -> Loc_err.raise_ err
+  Loc_err.ok_or_raise @@ expr_from_core_type ~loc core_type
 
 module Str = struct
   let value_expr_from_manifest ~ptype_loc ~loc manifest =

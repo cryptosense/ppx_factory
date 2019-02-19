@@ -12,3 +12,6 @@ val as_result : loc: Location.t -> msg: string -> ('a, t) result
 
 (** Raise the given located error using [Raise.errorf] *)
 val raise_ : t -> 'a
+
+(** Return the value or raise the error from the given result *)
+val ok_or_raise : ('a, t) result -> 'a
