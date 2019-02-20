@@ -63,6 +63,21 @@ type ('a, 'b) parametrized_variant =
   | C of 'b option
 [@@deriving default]
 
+type poly_variant_without_arg = [`A | `B of int]
+[@@deriving default]
+
+type poly_variant_single_arg = [`A of int | `B]
+[@@deriving default]
+
+type poly_variant_tuple_arg = [`A of int * string | `B]
+[@@deriving default]
+
+type 'a poly_variant_open = [>`A | `B] as 'a
+[@@deriving default]
+
+type ('a, 'b) parametrized_poly_variant = [`A of 'a | `B of 'b | `C of 'b option]
+[@@deriving default]
+
 module type DEFAULT = sig
   type t [@@deriving default]
   type simple [@@deriving default]

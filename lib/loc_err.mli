@@ -3,6 +3,9 @@ open Ppxlib
 (** Type for located errors *)
 type t
 
+(** Return the message for the given located error *)
+val msg : t -> string
+
 (** Return a located error with the given loc and error message wrapped in a result's [Error].
     @param loc the precise location of the unhandled part of the type declaration AST node.
     Should be more accurate than the [loc] provided by ppxlib to the generator function.

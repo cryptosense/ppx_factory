@@ -29,8 +29,34 @@ let rec expr_from_core_type ~loc {ptyp_desc; ptyp_loc; _} =
     let open Util.Result_ in
     let expr_list = List.map (expr_from_core_type ~loc) types in
     Util.List_.all_ok expr_list >|= Ast_builder.Default.pexp_tuple ~loc
+  | Ptyp_alias (core_type, _) -> expr_from_core_type ~loc core_type
+  | Ptyp_variant (fields, _, _) ->
+    ( match Util.List_.find_ok ~f:(expr_from_poly_variant_field ~ptyp_loc ~loc) fields with
+      | Ok _ as ok -> ok
+      | Error `Empty -> assert false
+      | Error (`Last err) ->
+        let msg =
+          Printf.sprintf
+            "can't derive default for any constructor from this polymorphic variant type, \
+             last error is: %s"
+            (Loc_err.msg err)
+        in
+        Loc_err.as_result ~loc:ptyp_loc ~msg
+    )
   | Ptyp_var _ -> Loc_err.as_result ~loc:ptyp_loc ~msg:"can't derive default for unspecified type"
   | _ -> Loc_err.as_result ~loc:ptyp_loc ~msg:"can't derive default from this type"
+and expr_from_poly_variant_field ~ptyp_loc ~loc = function
+  | Rinherit _ ->
+    Loc_err.as_result ~loc:ptyp_loc ~msg:"can't derive default for inherited variant"
+  | Rtag ({txt = ctor; _}, _attributes, true (* accept constant ctor *), _) ->
+    Ok (Ast_builder.Default.pexp_variant ~loc ctor None)
+  | Rtag ({txt = ctor; _}, _attributes, false, core_type::_) ->
+    let open Util.Result_ in
+    expr_from_core_type ~loc core_type >|= fun expr ->
+    Ast_builder.Default.pexp_variant ~loc ctor (Some expr)
+  | Rtag (_label, _attributes, false, []) ->
+    (* cannot be associated with an empty list of types and not accept a constant ctor *)
+    assert false
 
 let expr_from_core_type_exn ~loc core_type =
   Loc_err.ok_or_raise @@ expr_from_core_type ~loc core_type
