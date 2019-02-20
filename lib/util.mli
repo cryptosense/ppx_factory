@@ -21,6 +21,15 @@ module List_ : sig
       error otherwise.
   *)
   val all_ok : ('a, 'b) result list -> ('a list, 'b) result
+
+  (** Apply the given function to the given list's elements until it returns [Ok _].
+      Return [Error `Empty] if the list is empty or [Error (`Last err)] with the last error returned
+      by [f] if it returned an error for every elements.
+  *)
+  val find_ok :
+    f: ('a -> ('b, 'err) result) ->
+    'a list ->
+    ('b, [`Empty | `Last of 'err]) result
 end
 
 module Result_ : sig

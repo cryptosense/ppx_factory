@@ -29,9 +29,31 @@ module List_ = struct
     ; "Longer ok" >:: test ~input:[Ok 0; Ok 1; Ok 2] ~expected:(Ok [0; 1; 2])
     ]
 
+  let test_find_ok =
+    let test ~f ~input ~expected ctxt =
+      let actual = Ppx_factory_lib.Util.List_.find_ok ~f input in
+      assert_equal ~ctxt
+        ~cmp:[%eq: (int, [`Empty | `Last of int]) result]
+        ~printer:[%show: (int, [`Empty | `Last of int]) result]
+        expected
+        actual
+    in
+    "find_ok" >:::
+    [ "Empty" >:: test ~f:(fun _ -> Ok 0) ~input:[] ~expected:(Error `Empty)
+    ; "Return first ok" >:: test
+        ~f:(fun i -> if i mod 2 = 0 then Ok i else Error i)
+        ~input:[0; 1; 2; 3]
+        ~expected:(Ok 0)
+    ; "Return last error" >:: test
+        ~f:(fun i -> Error i)
+        ~input:[0; 1; 2]
+        ~expected:(Error (`Last 2))
+    ]
+
   let suite =
     "List_" >:::
     [ test_all_ok
+    ; test_find_ok
     ]
 end
 

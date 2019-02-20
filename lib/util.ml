@@ -29,6 +29,19 @@ module List_ = struct
     match !err with
     | Some e -> Error e
     | None -> assert false
+
+  let rec find_ok ~f = function
+    | [] -> Error `Empty
+    | [last] ->
+      ( match f last with
+        | Ok _ as ok -> ok
+        | Error err -> Error (`Last err)
+      )
+    | hd::tl ->
+      ( match f hd with
+        | Ok _ as ok -> ok
+        | Error _ -> find_ok ~f tl
+      )
 end
 
 module Result_ = struct

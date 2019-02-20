@@ -81,25 +81,18 @@ module Str = struct
       value_expr_from_constructor_tuple ~loc types >|=
       Util.Expr.constructor ~loc ~constructor_name
 
-  let rec value_expr_from_constructor_list ~has_params ~ptype_loc ~loc constructor_list =
-    match constructor_list with
-    | [] -> Raise.Default.errorf ~loc:ptype_loc "can't derive default for empty variant type"
-    | [last] ->
-      ( match value_expr_from_constructor ~loc last with
-        | Ok expr -> expr
-        | Error err ->
-          if has_params then
-            Raise.Default.errorf ~loc:ptype_loc
-              "can't derive default for this variant \
-               as all constructors have unspecified type arguments"
-          else
-            Loc_err.raise_ err
-      )
-    | constructor::tl ->
-      ( match value_expr_from_constructor ~loc constructor with
-        | Ok expr -> expr
-        | Error _ -> value_expr_from_constructor_list ~has_params ~ptype_loc ~loc tl
-      )
+  let value_expr_from_constructor_list ~has_params ~ptype_loc ~loc constructor_list =
+    match Util.List_.find_ok ~f:(value_expr_from_constructor ~loc) constructor_list with
+    | Ok expr -> expr
+    | Error `Empty ->
+      Raise.Default.errorf ~loc:ptype_loc "can't derive default for empty variant type"
+    | Error (`Last err) ->
+      if has_params then
+        Raise.Default.errorf ~loc:ptype_loc
+          "can't derive default for this variant \
+           as all constructors have unspecified type arguments"
+      else
+        Loc_err.raise_ err
 
   let value_pat_from_name ~loc type_name =
     let name = _name_from_type_name type_name in
