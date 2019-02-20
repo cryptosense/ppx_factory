@@ -26,12 +26,10 @@ let rec expr_from_core_type ~loc {ptyp_desc; ptyp_loc; _} =
   | Ptyp_constr ({txt = Lident "array"; _}, _) -> Ok [%expr [||]]
   | Ptyp_constr (lident, _) -> Ok (expr_from_lident ~loc lident)
   | Ptyp_tuple types ->
+    let open Util.Result_ in
     let expr_list = List.map (expr_from_core_type ~loc) types in
-    ( match Util.List_.all_ok expr_list with
-      | Ok expr_list -> Ok (Ast_builder.Default.pexp_tuple ~loc expr_list)
-      | Error _ as err -> err
-    )
-  | Ptyp_var _ -> Loc_err.as_result ~loc:ptyp_loc ~msg:"can't derive default for unspecified type" 
+    Util.List_.all_ok expr_list >|= Ast_builder.Default.pexp_tuple ~loc
+  | Ptyp_var _ -> Loc_err.as_result ~loc:ptyp_loc ~msg:"can't derive default for unspecified type"
   | _ -> Loc_err.as_result ~loc:ptyp_loc ~msg:"can't derive default from this type"
 
 let expr_from_core_type_exn ~loc core_type =
