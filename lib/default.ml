@@ -40,6 +40,15 @@ module Str = struct
         "can't derive default for an abstract type without a manifest"
     | Some typ -> expr_from_core_type ~loc typ
 
+  let field_binding ~loc {pld_name; pld_type; _} =
+    let lident = {txt = Lident pld_name.txt; loc} in
+    let expr = expr_from_core_type ~loc pld_type in
+    (lident, expr)
+
+  let value_expr_from_labels ~loc labels =
+    let field_bindings = List.map (field_binding ~loc) labels in
+    Ast_builder.Default.pexp_record ~loc field_bindings None
+
   let value_pat_from_name ~loc type_name =
     let name = _name_from_type_name type_name in
     Ast_builder.Default.ppat_var ~loc {txt = name; loc}
@@ -48,8 +57,8 @@ module Str = struct
     let expr =
       match ptype_kind with
       | Ptype_abstract -> value_expr_from_manifest ~ptype_loc ~loc ptype_manifest
+      | Ptype_record labels -> value_expr_from_labels ~loc labels
       | Ptype_variant _
-      | Ptype_record _
       | Ptype_open -> Raise.Default.errorf ~loc:ptype_loc "unhandled type kind"
     in
     let pat = value_pat_from_name ~loc ptype_name.txt in

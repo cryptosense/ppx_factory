@@ -26,6 +26,13 @@ end
 
 type other_type = A.B.some_type [@@deriving default]
 
+type record =
+  { int_field : int
+  ; string_field : string
+  ; other_field : A.B.some_type
+  }
+[@@deriving default]
+
 module type DEFAULT = sig
   type t [@@deriving default]
   type simple [@@deriving default]

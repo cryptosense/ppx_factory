@@ -41,6 +41,13 @@ module A =
   end
 type other_type = A.B.some_type[@@deriving default]
 let default_other_type = A.B.default_some_type
+type record =
+  {
+  int_field: int ;
+  string_field: string ;
+  other_field: A.B.some_type }[@@deriving default]
+let default_record =
+  { int_field = 0; string_field = ""; other_field = A.B.default_some_type }
 module type DEFAULT  =
   sig
     type t[@@deriving default]
