@@ -13,7 +13,7 @@ module Expr : sig
   val var : loc: Location.t -> string -> expression
 
   (** Return the contructor expression with the given constructor name and argument expression *)
-  val ctr : loc: Location.t -> ctr_name: string -> expression option -> expression
+  val constructor : loc: Location.t -> constructor_name: string -> expression option -> expression
 end
 
 module List_ : sig

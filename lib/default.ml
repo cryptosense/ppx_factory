@@ -61,7 +61,7 @@ module Str = struct
   let value_expr_from_labels_exn ~loc labels =
     Loc_err.ok_or_raise @@ value_expr_from_labels ~loc labels
 
-  let value_expr_from_ctr_tuple ~loc types =
+  let value_expr_from_constructor_tuple ~loc types =
     let open Util.Result_ in
     let expr_list = List.map (expr_from_core_type ~loc) types in
     match expr_list with
@@ -71,20 +71,21 @@ module Str = struct
       Util.List_.all_ok expr_list >|= fun expr_list ->
       Some (Ast_builder.Default.pexp_tuple ~loc expr_list)
 
-  let value_expr_from_ctor ~loc {pcd_name = {txt = ctr_name; _}; pcd_args; _} =
+  let value_expr_from_constructor ~loc {pcd_name = {txt = constructor_name; _}; pcd_args; _} =
     let open Util.Result_ in
     match pcd_args with
     | Pcstr_record labels ->
       value_expr_from_labels ~loc labels >|= fun record_expr ->
-      Util.Expr.ctr ~loc ~ctr_name (Some record_expr)
+      Util.Expr.constructor ~loc ~constructor_name (Some record_expr)
     | Pcstr_tuple types ->
-      value_expr_from_ctr_tuple ~loc types >|= Util.Expr.ctr ~loc ~ctr_name
+      value_expr_from_constructor_tuple ~loc types >|=
+      Util.Expr.constructor ~loc ~constructor_name
 
-  let rec value_expr_from_ctors ~has_params ~ptype_loc ~loc ctors =
-    match ctors with
+  let rec value_expr_from_constructor_list ~has_params ~ptype_loc ~loc constructor_list =
+    match constructor_list with
     | [] -> Raise.Default.errorf ~loc:ptype_loc "can't derive default for empty variant type"
     | [last] ->
-      ( match value_expr_from_ctor ~loc last with
+      ( match value_expr_from_constructor ~loc last with
         | Ok expr -> expr
         | Error err ->
           if has_params then
@@ -94,10 +95,10 @@ module Str = struct
           else
             Loc_err.raise_ err
       )
-    | ctor::tl ->
-      ( match value_expr_from_ctor ~loc ctor with
+    | constructor::tl ->
+      ( match value_expr_from_constructor ~loc constructor with
         | Ok expr -> expr
-        | Error _ -> value_expr_from_ctors ~has_params ~ptype_loc ~loc tl
+        | Error _ -> value_expr_from_constructor_list ~has_params ~ptype_loc ~loc tl
       )
 
   let value_pat_from_name ~loc type_name =
@@ -110,7 +111,8 @@ module Str = struct
       match ptype_kind with
       | Ptype_abstract -> value_expr_from_manifest ~ptype_loc ~loc ptype_manifest
       | Ptype_record labels -> value_expr_from_labels_exn ~loc labels
-      | Ptype_variant constructors -> value_expr_from_ctors ~has_params ~ptype_loc ~loc constructors
+      | Ptype_variant constructors ->
+        value_expr_from_constructor_list ~has_params ~ptype_loc ~loc constructors
       | Ptype_open -> Raise.Default.errorf ~loc:ptype_loc "unhandled type kind"
     in
     let pat = value_pat_from_name ~loc ptype_name.txt in
