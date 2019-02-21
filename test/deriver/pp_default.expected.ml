@@ -48,6 +48,13 @@ type record =
   other_field: A.B.some_type }[@@deriving default]
 let default_record =
   { int_field = 0; string_field = ""; other_field = A.B.default_some_type }
+type copied = record =
+  {
+  int_field: int ;
+  string_field: string ;
+  other_field: A.B.some_type }[@@deriving default]
+let default_copied =
+  { int_field = 0; string_field = ""; other_field = A.B.default_some_type }
 module type DEFAULT  =
   sig
     type t[@@deriving default]
@@ -68,4 +75,8 @@ module type DEFAULT  =
       a: int ;
       b: string }[@@deriving default]
     val default_record : record
+    type copied = record = {
+      a: int ;
+      b: string }[@@deriving default]
+    val default_copied : copied
   end

@@ -32,6 +32,13 @@ module Types : sig
     ; non_paramed : string
     }
   [@@deriving factory]
+
+  type copied = simple_record =
+    { int_field : int
+    ; string_field : string
+    ; other_field : A.B.t
+    }
+  [@@deriving factory]
 end = struct
   type simple_record =
     { int_field : int
@@ -57,6 +64,13 @@ end = struct
   type 'a parametrized =
     { param : 'a option
     ; non_paramed : string
+    }
+  [@@deriving factory]
+
+  type copied = simple_record =
+    { int_field : int
+    ; string_field : string
+    ; other_field : A.B.t
     }
   [@@deriving factory]
 end
