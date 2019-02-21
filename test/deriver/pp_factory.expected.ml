@@ -36,6 +36,14 @@ module Types :
       non_paramed: string }[@@deriving factory]
     val factory_parametrized :
       ?param:'a -> ?non_paramed:string -> unit -> 'a parametrized
+    type copied = simple_record =
+      {
+      int_field: int ;
+      string_field: string ;
+      other_field: A.B.t }[@@deriving factory]
+    val factory_copied :
+      ?int_field:int ->
+        ?string_field:string -> ?other_field:A.B.t -> unit -> copied
   end =
   struct
     type simple_record =
@@ -70,4 +78,11 @@ module Types :
       non_paramed: string }[@@deriving factory]
     let factory_parametrized ?param  ?(non_paramed= "")  () =
       { param; non_paramed }
+    type copied = simple_record =
+      {
+      int_field: int ;
+      string_field: string ;
+      other_field: A.B.t }[@@deriving factory]
+    let factory_copied ?(int_field= 0)  ?(string_field= "")  ?(other_field=
+      A.B.default)  () = { int_field; string_field; other_field }
   end 

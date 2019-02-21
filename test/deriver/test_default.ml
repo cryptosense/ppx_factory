@@ -33,6 +33,13 @@ type record =
   }
 [@@deriving default]
 
+type copied = record =
+  { int_field : int
+  ; string_field : string
+  ; other_field : A.B.some_type
+  }
+[@@deriving default]
+
 module type DEFAULT = sig
   type t [@@deriving default]
   type simple [@@deriving default]
@@ -41,4 +48,5 @@ module type DEFAULT = sig
   type ('a, 'b) parametrized [@@deriving default]
   type variant = A of int | B of string [@@deriving default]
   type record = {a : int; b : string} [@@deriving default]
+  type copied = record = {a : int; b : string} [@@deriving default]
 end
