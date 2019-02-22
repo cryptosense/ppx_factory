@@ -3,9 +3,9 @@ open Ppxlib
 let _name_from_type_name type_name =
   Printf.sprintf "factory%s" @@ Util.suffix_from_type_name type_name
 
-let _name_from_type_and_ctr_name ~type_name ~ctr_name =
+let _name_from_type_and_constructor_name ~type_name ~constructor_name =
   let base_factory_name = _name_from_type_name type_name in
-  Printf.sprintf "%s_%s" base_factory_name (String.lowercase_ascii ctr_name)
+  Printf.sprintf "%s_%s" base_factory_name (String.lowercase_ascii constructor_name)
 
 let arg_names_from_labels labels =
   List.map (fun {pld_name; _} -> pld_name.txt) labels
@@ -28,7 +28,7 @@ module Str = struct
   let default_arg_from_core_type ~loc core_type =
     match core_type with
     | [%type: [%t? _] option] -> None
-    | _ -> Some (Default.expr_from_core_type ~loc core_type)
+    | _ -> Some (Default.expr_from_core_type_exn ~loc core_type)
 
   let defaults_from_label_decl ~loc labels =
     List.map (fun {pld_type; _} -> default_arg_from_core_type ~loc pld_type) labels
@@ -37,14 +37,14 @@ module Str = struct
     let lident = {txt = Lident name; loc} in
     (lident, Util.Expr.var ~loc name)
 
-  let fun_expr_from_labels ~loc ?ctr_name labels =
+  let fun_expr_from_labels ~loc ?constructor_name labels =
     let arg_names = arg_names_from_labels labels in
     let fields_bindings = List.map (fixed_field_binding ~loc) arg_names in
     let record_expr = Ast_builder.Default.pexp_record ~loc fields_bindings None in
     let return_expr =
-      match ctr_name with
+      match constructor_name with
       | None -> record_expr
-      | Some ctr_name -> Util.Expr.ctr ~loc ~ctr_name (Some record_expr)
+      | Some constructor_name -> Util.Expr.constructor ~loc ~constructor_name (Some record_expr)
     in
     let defaults = defaults_from_label_decl ~loc labels in
     factory_fun_expr ~loc ~return_expr ~arg_names ~defaults
@@ -54,8 +54,8 @@ module Str = struct
     let value_binding = Ast_builder.Default.value_binding ~loc ~pat ~expr in
     Ast_builder.Default.pstr_value ~loc Nonrecursive [value_binding]
 
-  let from_labels ~loc ~factory_name ?ctr_name labels =
-    let expr = fun_expr_from_labels ~loc ?ctr_name labels in
+  let from_labels ~loc ~factory_name ?constructor_name labels =
+    let expr = fun_expr_from_labels ~loc ?constructor_name labels in
     value_binding ~loc ~factory_name ~expr
 
   let from_record ~loc ~type_name ~labels =
@@ -65,31 +65,31 @@ module Str = struct
   let defaults_from_tuple ~loc types =
     List.map (fun core_type -> default_arg_from_core_type ~loc core_type) types
 
-  let fun_expr_from_ctr_tuple ~loc ~ctr_name types =
+  let fun_expr_from_constructor_tuple ~loc ~constructor_name types =
     let arg_names = arg_names_from_tuple types in
     let tuple_bindings = List.map (Util.Expr.var ~loc) arg_names in
-    let ctr_arg_expr =
+    let constructor_arg_expr =
       match tuple_bindings with
       | [] -> None
       | [expr] -> Some expr
       | _ -> Some (Ast_builder.Default.pexp_tuple ~loc tuple_bindings)
     in
-    let return_expr = Util.Expr.ctr ~loc ~ctr_name ctr_arg_expr in
+    let return_expr = Util.Expr.constructor ~loc ~constructor_name constructor_arg_expr in
     let defaults = defaults_from_tuple ~loc types in
     factory_fun_expr ~loc ~return_expr ~arg_names ~defaults
 
-  let from_ctr_tuple ~loc ~factory_name ~ctr_name types =
-    let expr = fun_expr_from_ctr_tuple ~loc ~ctr_name types in
+  let from_constructor_tuple ~loc ~factory_name ~constructor_name types =
+    let expr = fun_expr_from_constructor_tuple ~loc ~constructor_name types in
     value_binding ~loc ~factory_name ~expr
 
-  let from_ctr_record ~loc ~factory_name ~ctr_name labels =
-    from_labels ~loc ~factory_name ~ctr_name labels
+  let from_constructor_record ~loc ~factory_name ~constructor_name labels =
+    from_labels ~loc ~factory_name ~constructor_name labels
 
-  let from_constructor ~loc ~type_name {pcd_name = {txt = ctr_name; _}; pcd_args; _} =
-    let factory_name = _name_from_type_and_ctr_name ~type_name ~ctr_name in
+  let from_constructor ~loc ~type_name {pcd_name = {txt = constructor_name; _}; pcd_args; _} =
+    let factory_name = _name_from_type_and_constructor_name ~type_name ~constructor_name in
     match pcd_args with
-    | Pcstr_tuple types -> from_ctr_tuple ~loc ~factory_name ~ctr_name types
-    | Pcstr_record labels -> from_ctr_record ~loc ~factory_name ~ctr_name labels
+    | Pcstr_tuple types -> from_constructor_tuple ~loc ~factory_name ~constructor_name types
+    | Pcstr_record labels -> from_constructor_record ~loc ~factory_name ~constructor_name labels
 
   let from_td ~loc {ptype_name = {txt = type_name; _}; ptype_kind; _} =
     match ptype_kind with
@@ -126,7 +126,7 @@ module Sig = struct
     let arg_types = arg_types_from_labels labels in
     factory_fun_val ~loc ~return_type ~arg_names ~arg_types
 
-  let fun_val_from_ctr_tuple ~loc ~return_type types =
+  let fun_val_from_constructor_tuple ~loc ~return_type types =
     let arg_names = arg_names_from_tuple types in
     let arg_types = List.map arg_type_from_core_type types in
     factory_fun_val ~loc ~return_type ~arg_names ~arg_types
@@ -140,18 +140,19 @@ module Sig = struct
     let type_ = fun_val_from_labels ~loc ~return_type labels in
     value_descr ~loc ~factory_name ~type_
 
-  let from_ctr_tuple ~loc ~factory_name ~return_type types =
-    let type_ = fun_val_from_ctr_tuple ~loc ~return_type types in
+  let from_constructor_tuple ~loc ~factory_name ~return_type types =
+    let type_ = fun_val_from_constructor_tuple ~loc ~return_type types in
     value_descr ~loc ~factory_name ~type_
 
   let from_record ~loc ~type_name ~return_type ~labels =
     let factory_name = _name_from_type_name type_name in
     [from_labels ~loc ~factory_name ~return_type labels]
 
-  let from_constructor ~loc ~type_name ~return_type {pcd_name = {txt = ctr_name; _}; pcd_args; _} =
-    let factory_name = _name_from_type_and_ctr_name ~type_name ~ctr_name in
+  let from_constructor ~loc ~type_name ~return_type {pcd_name; pcd_args; _} =
+    let {txt = constructor_name; _} = pcd_name in
+    let factory_name = _name_from_type_and_constructor_name ~type_name ~constructor_name in
     match pcd_args with
-    | Pcstr_tuple types -> from_ctr_tuple ~loc ~factory_name ~return_type types
+    | Pcstr_tuple types -> from_constructor_tuple ~loc ~factory_name ~return_type types
     | Pcstr_record labels -> from_labels ~loc ~factory_name ~return_type labels
 
   let from_td ~loc ({ptype_name = {txt = type_name; _}; ptype_kind; _} as td) =

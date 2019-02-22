@@ -13,23 +13,29 @@ let expr_from_lident ~loc {txt; loc = err_loc} =
 
 let rec expr_from_core_type ~loc {ptyp_desc; ptyp_loc; _} =
   match ptyp_desc with
-  | Ptyp_constr ({txt = Lident "bool"; _}, _) -> [%expr false]
-  | Ptyp_constr ({txt = Lident "int"; _}, _) -> [%expr 0]
-  | Ptyp_constr ({txt = Lident "int32" | Ldot (Lident "Int32", "t"); _}, _) -> [%expr 0l]
-  | Ptyp_constr ({txt = Lident "int64" | Ldot (Lident "Int64", "t"); _}, _) -> [%expr 0L]
-  | Ptyp_constr ({txt = Lident "nativeint" | Ldot (Lident "Nativeint", "t"); _}, _) -> [%expr 0n]
-  | Ptyp_constr ({txt = Lident "float" | Ldot (Lident "Float", "t"); _}, _) -> [%expr 0.]
-  | Ptyp_constr ({txt = Lident "char" | Ldot (Lident "Char", "t"); _}, _) -> [%expr '\x00']
-  | Ptyp_constr ({txt = Lident "string" | Ldot (Lident "String", "t"); _}, _) -> [%expr ""]
-  | Ptyp_constr ({txt = Lident "option"; _}, _) -> [%expr None]
-  | Ptyp_constr ({txt = Lident "list"; _}, _) -> [%expr []]
-  | Ptyp_constr ({txt = Lident "array"; _}, _) -> [%expr [||]]
-  | Ptyp_constr (lident, _) -> expr_from_lident ~loc lident
+  | Ptyp_constr ({txt = Lident "bool"; _}, _) -> Ok [%expr false]
+  | Ptyp_constr ({txt = Lident "int"; _}, _) -> Ok [%expr 0]
+  | Ptyp_constr ({txt = Lident "int32" | Ldot (Lident "Int32", "t"); _}, _) -> Ok [%expr 0l]
+  | Ptyp_constr ({txt = Lident "int64" | Ldot (Lident "Int64", "t"); _}, _) -> Ok [%expr 0L]
+  | Ptyp_constr ({txt = Lident "nativeint" | Ldot (Lident "Nativeint", "t"); _}, _) -> Ok [%expr 0n]
+  | Ptyp_constr ({txt = Lident "float" | Ldot (Lident "Float", "t"); _}, _) -> Ok [%expr 0.]
+  | Ptyp_constr ({txt = Lident "char" | Ldot (Lident "Char", "t"); _}, _) -> Ok [%expr '\x00']
+  | Ptyp_constr ({txt = Lident "string" | Ldot (Lident "String", "t"); _}, _) -> Ok [%expr ""]
+  | Ptyp_constr ({txt = Lident "option"; _}, _) -> Ok [%expr None]
+  | Ptyp_constr ({txt = Lident "list"; _}, _) -> Ok [%expr []]
+  | Ptyp_constr ({txt = Lident "array"; _}, _) -> Ok [%expr [||]]
+  | Ptyp_constr (lident, _) -> Ok (expr_from_lident ~loc lident)
   | Ptyp_tuple types ->
     let expr_list = List.map (expr_from_core_type ~loc) types in
-    Ast_builder.Default.pexp_tuple ~loc expr_list
-  | Ptyp_var _ -> Raise.errorf ~loc:ptyp_loc "can't derive default for unspecified type" 
-  | _ -> Raise.errorf ~loc:ptyp_loc "can't derive default value from this type"
+    ( match Util.List_.all_ok expr_list with
+      | Ok expr_list -> Ok (Ast_builder.Default.pexp_tuple ~loc expr_list)
+      | Error _ as err -> err
+    )
+  | Ptyp_var _ -> Loc_err.as_result ~loc:ptyp_loc ~msg:"can't derive default for unspecified type" 
+  | _ -> Loc_err.as_result ~loc:ptyp_loc ~msg:"can't derive default from this type"
+
+let expr_from_core_type_exn ~loc core_type =
+  Loc_err.ok_or_raise @@ expr_from_core_type ~loc core_type
 
 module Str = struct
   let value_expr_from_manifest ~ptype_loc ~loc manifest =
@@ -38,27 +44,75 @@ module Str = struct
       Raise.Default.errorf
         ~loc:ptype_loc
         "can't derive default for an abstract type without a manifest"
-    | Some typ -> expr_from_core_type ~loc typ
+    | Some typ -> expr_from_core_type_exn ~loc typ
 
   let field_binding ~loc {pld_name; pld_type; _} =
+    let open Util.Result_ in
     let lident = {txt = Lident pld_name.txt; loc} in
-    let expr = expr_from_core_type ~loc pld_type in
+    expr_from_core_type ~loc pld_type >|= fun expr ->
     (lident, expr)
 
   let value_expr_from_labels ~loc labels =
+    let open Util.Result_ in
     let field_bindings = List.map (field_binding ~loc) labels in
+    Util.List_.all_ok field_bindings >|= fun field_bindings ->
     Ast_builder.Default.pexp_record ~loc field_bindings None
+
+  let value_expr_from_labels_exn ~loc labels =
+    Loc_err.ok_or_raise @@ value_expr_from_labels ~loc labels
+
+  let value_expr_from_constructor_tuple ~loc types =
+    let open Util.Result_ in
+    let expr_list = List.map (expr_from_core_type ~loc) types in
+    match expr_list with
+    | [] -> Ok None
+    | [expr] -> expr >|= fun expr -> Some expr
+    | _ ->
+      Util.List_.all_ok expr_list >|= fun expr_list ->
+      Some (Ast_builder.Default.pexp_tuple ~loc expr_list)
+
+  let value_expr_from_constructor ~loc {pcd_name = {txt = constructor_name; _}; pcd_args; _} =
+    let open Util.Result_ in
+    match pcd_args with
+    | Pcstr_record labels ->
+      value_expr_from_labels ~loc labels >|= fun record_expr ->
+      Util.Expr.constructor ~loc ~constructor_name (Some record_expr)
+    | Pcstr_tuple types ->
+      value_expr_from_constructor_tuple ~loc types >|=
+      Util.Expr.constructor ~loc ~constructor_name
+
+  let rec value_expr_from_constructor_list ~has_params ~ptype_loc ~loc constructor_list =
+    match constructor_list with
+    | [] -> Raise.Default.errorf ~loc:ptype_loc "can't derive default for empty variant type"
+    | [last] ->
+      ( match value_expr_from_constructor ~loc last with
+        | Ok expr -> expr
+        | Error err ->
+          if has_params then
+            Raise.Default.errorf ~loc:ptype_loc
+              "can't derive default for this variant \
+               as all constructors have unspecified type arguments"
+          else
+            Loc_err.raise_ err
+      )
+    | constructor::tl ->
+      ( match value_expr_from_constructor ~loc constructor with
+        | Ok expr -> expr
+        | Error _ -> value_expr_from_constructor_list ~has_params ~ptype_loc ~loc tl
+      )
 
   let value_pat_from_name ~loc type_name =
     let name = _name_from_type_name type_name in
     Ast_builder.Default.ppat_var ~loc {txt = name; loc}
 
-  let from_td ~loc {ptype_name; ptype_kind; ptype_manifest; ptype_loc; _} =
+  let from_td ~loc {ptype_name; ptype_kind; ptype_manifest; ptype_loc; ptype_params; _} =
+    let has_params = ptype_params <> [] in
     let expr =
       match ptype_kind with
       | Ptype_abstract -> value_expr_from_manifest ~ptype_loc ~loc ptype_manifest
-      | Ptype_record labels -> value_expr_from_labels ~loc labels
-      | Ptype_variant _
+      | Ptype_record labels -> value_expr_from_labels_exn ~loc labels
+      | Ptype_variant constructors ->
+        value_expr_from_constructor_list ~has_params ~ptype_loc ~loc constructors
       | Ptype_open -> Raise.Default.errorf ~loc:ptype_loc "unhandled type kind"
     in
     let pat = value_pat_from_name ~loc ptype_name.txt in

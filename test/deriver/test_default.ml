@@ -40,6 +40,29 @@ type copied = record =
   }
 [@@deriving default]
 
+type variant_without_arg =
+  | A
+  | B of int
+[@@deriving default]
+
+type variant_single_arg =
+  | A of int
+[@@deriving default]
+
+type variant_tuple_arg =
+  | A of int * string
+[@@deriving default]
+
+type variant_record_arg =
+  | A of {int_field : int; string_field : string}
+[@@deriving default]
+
+type ('a, 'b) parametrized_variant =
+  | A of 'a
+  | B of 'b
+  | C of 'b option
+[@@deriving default]
+
 module type DEFAULT = sig
   type t [@@deriving default]
   type simple [@@deriving default]

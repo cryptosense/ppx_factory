@@ -13,5 +13,16 @@ module Expr : sig
   val var : loc: Location.t -> string -> expression
 
   (** Return the contructor expression with the given constructor name and argument expression *)
-  val ctr : loc: Location.t -> ctr_name: string -> expression option -> expression
+  val constructor : loc: Location.t -> constructor_name: string -> expression option -> expression
+end
+
+module List_ : sig
+  (** [all_ok l] return [l'] if all elements of [l] are [Ok _] or the first encountered
+      error otherwise.
+  *)
+  val all_ok : ('a, 'b) result list -> ('a list, 'b) result
+end
+
+module Result_ : sig
+  val (>|=) : ('a, 'err) result -> ('a -> 'b) -> ('b, 'err) result
 end
