@@ -75,6 +75,18 @@ type ('a, 'b) parametrized_variant =
   | B of 'b 
   | C of 'b option [@@deriving default]
 let default_parametrized_variant = C None
+type poly_variant_without_arg = [ `A  | `B of int ][@@deriving default]
+let default_poly_variant_without_arg = `A
+type poly_variant_single_arg = [ `A of int  | `B ][@@deriving default]
+let default_poly_variant_single_arg = `A 0
+type poly_variant_tuple_arg = [ `A of (int * string)  | `B ][@@deriving
+                                                              default]
+let default_poly_variant_tuple_arg = `A (0, "")
+type 'a poly_variant_open = [> `A  | `B ] as 'a[@@deriving default]
+let default_poly_variant_open = `A
+type ('a, 'b) parametrized_poly_variant =
+  [ `A of 'a  | `B of 'b  | `C of 'b option ][@@deriving default]
+let default_parametrized_poly_variant = `C None
 module type DEFAULT  =
   sig
     type t[@@deriving default]

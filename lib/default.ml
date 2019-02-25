@@ -26,13 +26,37 @@ let rec expr_from_core_type ~loc {ptyp_desc; ptyp_loc; _} =
   | Ptyp_constr ({txt = Lident "array"; _}, _) -> Ok [%expr [||]]
   | Ptyp_constr (lident, _) -> Ok (expr_from_lident ~loc lident)
   | Ptyp_tuple types ->
+    let open Util.Result_ in
     let expr_list = List.map (expr_from_core_type ~loc) types in
-    ( match Util.List_.all_ok expr_list with
-      | Ok expr_list -> Ok (Ast_builder.Default.pexp_tuple ~loc expr_list)
-      | Error _ as err -> err
+    Util.List_.all_ok expr_list >|= Ast_builder.Default.pexp_tuple ~loc
+  | Ptyp_alias (core_type, _) -> expr_from_core_type ~loc core_type
+  | Ptyp_variant (fields, _, _) ->
+    ( match Util.List_.find_ok ~f:(expr_from_poly_variant_field ~ptyp_loc ~loc) fields with
+      | Ok _ as ok -> ok
+      | Error `Empty -> assert false
+      | Error (`Last err) ->
+        let msg =
+          Printf.sprintf
+            "can't derive default for any constructor from this polymorphic variant type, \
+             last error is: %s"
+            (Loc_err.msg err)
+        in
+        Loc_err.as_result ~loc:ptyp_loc ~msg
     )
-  | Ptyp_var _ -> Loc_err.as_result ~loc:ptyp_loc ~msg:"can't derive default for unspecified type" 
+  | Ptyp_var _ -> Loc_err.as_result ~loc:ptyp_loc ~msg:"can't derive default for unspecified type"
   | _ -> Loc_err.as_result ~loc:ptyp_loc ~msg:"can't derive default from this type"
+and expr_from_poly_variant_field ~ptyp_loc ~loc = function
+  | Rinherit _ ->
+    Loc_err.as_result ~loc:ptyp_loc ~msg:"can't derive default for inherited variant"
+  | Rtag ({txt = ctor; _}, _attributes, true (* accept constant ctor *), _) ->
+    Ok (Ast_builder.Default.pexp_variant ~loc ctor None)
+  | Rtag ({txt = ctor; _}, _attributes, false, core_type::_) ->
+    let open Util.Result_ in
+    expr_from_core_type ~loc core_type >|= fun expr ->
+    Ast_builder.Default.pexp_variant ~loc ctor (Some expr)
+  | Rtag (_label, _attributes, false, []) ->
+    (* cannot be associated with an empty list of types and not accept a constant ctor *)
+    assert false
 
 let expr_from_core_type_exn ~loc core_type =
   Loc_err.ok_or_raise @@ expr_from_core_type ~loc core_type
@@ -81,25 +105,18 @@ module Str = struct
       value_expr_from_constructor_tuple ~loc types >|=
       Util.Expr.constructor ~loc ~constructor_name
 
-  let rec value_expr_from_constructor_list ~has_params ~ptype_loc ~loc constructor_list =
-    match constructor_list with
-    | [] -> Raise.Default.errorf ~loc:ptype_loc "can't derive default for empty variant type"
-    | [last] ->
-      ( match value_expr_from_constructor ~loc last with
-        | Ok expr -> expr
-        | Error err ->
-          if has_params then
-            Raise.Default.errorf ~loc:ptype_loc
-              "can't derive default for this variant \
-               as all constructors have unspecified type arguments"
-          else
-            Loc_err.raise_ err
-      )
-    | constructor::tl ->
-      ( match value_expr_from_constructor ~loc constructor with
-        | Ok expr -> expr
-        | Error _ -> value_expr_from_constructor_list ~has_params ~ptype_loc ~loc tl
-      )
+  let value_expr_from_constructor_list ~has_params ~ptype_loc ~loc constructor_list =
+    match Util.List_.find_ok ~f:(value_expr_from_constructor ~loc) constructor_list with
+    | Ok expr -> expr
+    | Error `Empty ->
+      Raise.Default.errorf ~loc:ptype_loc "can't derive default for empty variant type"
+    | Error (`Last err) ->
+      if has_params then
+        Raise.Default.errorf ~loc:ptype_loc
+          "can't derive default for this variant \
+           as all constructors have unspecified type arguments"
+      else
+        Loc_err.raise_ err
 
   let value_pat_from_name ~loc type_name =
     let name = _name_from_type_name type_name in
