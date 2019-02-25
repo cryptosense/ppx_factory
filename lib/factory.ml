@@ -95,7 +95,7 @@ module Str = struct
     match ptype_kind with
     | Ptype_record labels -> from_record ~loc ~type_name ~labels
     | Ptype_variant constructors -> List.map (from_constructor ~loc ~type_name) constructors
-    | Ptype_abstract -> Raise.Factory.unhandled_type_kind ~loc "abstract"
+    | Ptype_abstract -> []
     | Ptype_open -> Raise.Factory.unhandled_type_kind ~loc "open"
 
   let from_type_decl ~loc ~path:_ (_rec_flag, tds) =
@@ -160,7 +160,7 @@ module Sig = struct
     match ptype_kind with
     | Ptype_record labels -> from_record ~loc ~type_name ~return_type ~labels
     | Ptype_variant ctors -> List.map (from_constructor ~loc ~type_name ~return_type) ctors
-    | Ptype_abstract -> Raise.Factory.unhandled_type_kind ~loc "abstract"
+    | Ptype_abstract -> []
     | Ptype_open -> Raise.Factory.unhandled_type_kind ~loc "open"
 
   let from_type_decl ~loc ~path:_ (_rec_flag, tds) =
