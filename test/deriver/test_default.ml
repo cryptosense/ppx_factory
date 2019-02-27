@@ -17,6 +17,9 @@ type 'a _list = 'a list [@@deriving default]
 type 'a _array = 'a array [@@deriving default]
 type tuple = int * string * int list [@@deriving default]
 
+type 'a ok = (int, 'a) result [@@deriving default]
+type 'a error = ('a, 'a option) result [@@deriving default]
+
 module A = struct
   module B = struct
     type some_type = int
