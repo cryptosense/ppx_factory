@@ -24,11 +24,11 @@ let rec expr_from_core_type ~loc {ptyp_desc; ptyp_loc; _} =
   | Ptyp_constr ({txt = Lident "option"; _}, _) -> Ok [%expr None]
   | Ptyp_constr ({txt = Lident "list"; _}, _) -> Ok [%expr []]
   | Ptyp_constr ({txt = Lident "array"; _}, _) -> Ok [%expr [||]]
-  | Ptyp_constr ({txt = Lident "result"; _}, [ok; error]) ->
+  | Ptyp_constr ({txt = Lident "result"; _}, [ok_type; error_type]) ->
     let open Util.Result_ in
-    ( match expr_from_core_type ~loc ok with
+    ( match expr_from_core_type ~loc ok_type with
       | Ok ok_arg -> Ok [%expr Ok [%e ok_arg]]
-      | Error _ -> expr_from_core_type ~loc error >|= fun err_arg -> [%expr Error [%e err_arg]]
+      | Error _ -> expr_from_core_type ~loc error_type >|= fun err_arg -> [%expr Error [%e err_arg]]
     )
   | Ptyp_constr (lident, _) -> Ok (expr_from_lident ~loc lident)
   | Ptyp_tuple types ->
