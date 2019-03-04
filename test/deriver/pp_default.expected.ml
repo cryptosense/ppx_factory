@@ -34,6 +34,10 @@ type 'a _array = 'a array[@@deriving default]
 let default__array = [||]
 type tuple = (int * string * int list)[@@deriving default]
 let default_tuple = (0, "", [])
+type 'a ok = (int, 'a) result[@@deriving default]
+let default_ok = Ok 0
+type 'a error = ('a, 'a option) result[@@deriving default]
+let default_error = Error None
 module A =
   struct
     module B = struct type some_type = int
