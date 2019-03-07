@@ -1,7 +1,7 @@
 open Ppxlib
 
 let _name_from_type_name type_name =
-  Printf.sprintf "default%s" @@ Util.suffix_from_type_name type_name
+  Printf.sprintf "default%s" @@ Util.affix_from_type_name ~kind:`Suffix type_name
 
 let expr_from_lident ~loc {txt; loc = err_loc} =
   match txt with

@@ -1,7 +1,7 @@
 open Ppxlib
 
 (** Return the suffix to apply to a derived value name, based on the type name *)
-val suffix_from_type_name : string -> string
+val affix_from_type_name : kind: [`Prefix | `Suffix] -> string -> string
 
 (** Return the core type describing the type declared in the given declaration.
     E.g. will return [[%type: 'a t]] for [type 'a t = A of int | B of 'a].

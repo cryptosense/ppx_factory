@@ -1,14 +1,15 @@
 open OUnit2
 
-let test_suffix_from_type_name =
-  let test ~input ~expected ctxt =
-    let actual = Ppx_factory_lib.Util.suffix_from_type_name input in
+let test_affix_from_type_name =
+  let test ~kind ~type_name ~expected ctxt =
+    let actual = Ppx_factory_lib.Util.affix_from_type_name ~kind type_name in
     assert_equal ~ctxt ~cmp:[%eq: string] ~printer:[%show: string] expected actual
   in
-  "suffix_from_type_name" >:::
-  [ "Type t" >:: test ~input:"t" ~expected:""
-  ; "Other type name" >:: test ~input:"a" ~expected:"_a"
-  ; "Preserves leading underscores" >:: test ~input:"_a" ~expected:"__a"
+  "affix_from_type_name" >:::
+  [ "Type t" >:: test ~kind:`Suffix ~type_name:"t" ~expected:""
+  ; "Suffix" >:: test ~kind:`Suffix ~type_name:"a" ~expected:"_a"
+  ; "Prefix" >:: test ~kind:`Prefix ~type_name:"a" ~expected:"a_"
+  ; "Preserves leading underscores" >:: test ~kind:`Suffix ~type_name:"_a" ~expected:"__a"
   ]
 
 module List_ = struct
@@ -59,6 +60,6 @@ end
 
 let suite =
   "Util" >:::
-  [ test_suffix_from_type_name
+  [ test_affix_from_type_name
   ; List_.suite
   ]

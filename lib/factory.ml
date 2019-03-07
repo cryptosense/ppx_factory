@@ -1,7 +1,7 @@
 open Ppxlib
 
 let _name_from_type_name type_name =
-  Printf.sprintf "factory%s" @@ Util.suffix_from_type_name type_name
+  Printf.sprintf "factory%s" @@ Util.affix_from_type_name ~kind:`Suffix type_name
 
 let _name_from_type_and_constructor_name ~type_name ~constructor_name =
   let base_factory_name = _name_from_type_name type_name in

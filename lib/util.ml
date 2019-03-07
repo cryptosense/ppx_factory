@@ -1,8 +1,10 @@
 open Ppxlib
 
-let suffix_from_type_name = function
-  | "t" -> ""
-  | s -> "_" ^ s
+let affix_from_type_name ~kind type_name =
+  match type_name, kind with
+  | "t", _ -> ""
+  | _, `Suffix -> "_" ^ type_name
+  | _, `Prefix -> type_name ^ "_"
 
 let constr_from_type_param ~loc (core_type, _variance) =
   {core_type with ptyp_loc = loc; ptyp_attributes = []}
