@@ -31,7 +31,7 @@ let full_name {first_name; last_name; middle_name; _} =
 When writing tests for the `full_name` function, you don't want to bother defining `age` and
 `hobbies` every time so you use a factory method that looks like:
 ```ocaml
-val factory_person :
+val person_factory :
   ?first_name: string ->
   ?middle_name: string ->
   ?last_name: string ->
@@ -44,10 +44,10 @@ val factory_person :
 and let's you write your test in a more concise manner:
 ```ocaml
 test
-  ~input:(factory_person ~first_name:"John" ?middle_name:None ~last_name:"Doe" ())
+  ~input:(person_factory ~first_name:"John" ?middle_name:None ~last_name:"Doe" ())
   ~expected:"John Doe";
 test
-  ~input:(factory_person ~first_name:"Robyn" ~middle_name:"Rihanna" ~last_name:"Fenty" ())
+  ~input:(person_factory ~first_name:"Robyn" ~middle_name:"Rihanna" ~last_name:"Fenty" ())
   ~expected:"Robyn \"Rihanna\" Fenty"
 ```
 
@@ -89,7 +89,7 @@ variant type definition.
 
 You can derive factory functions from record type definitions. This will derive a single factory
 function that has an optional argument per field. The name of the factory function depends on the
-name of the type, `factory` will be derived from type `t` and `factory_<type_name>` for any other
+name of the type, `factory` will be derived from type `t` and `<type_name>_factory` for any other
 type.
 
 Each optional parameter will expect the same type as the one declared for the corresponding field,
@@ -115,14 +115,14 @@ will derive the following factory functions:
 ```ocaml
 val factory : ?a: int -> ?b: string -> unit -> t
 
-val factory_u : ?c: 'a list -> ?d: 'a -> unit -> 'a t
+val u_factory : ?c: 'a list -> ?d: 'a -> unit -> 'a t
 ```
 
 #### Variant types
 
 You can also derive factory functions from variant type definitions. This will derive one of them
-per constructor. Those functions will be named based on the type, just as for the record types but
-will have a `_<lowercased_constructor_name>` suffix.
+per constructor. Those functions will be named based on the type and the constructor name and have
+a `<type_name>_<lowercased_constructor_name>_` prefix.
 
 Constant constructor factories will have a single `unit` argument, while for constructors with tuple
 arguments, including 1-element tuples, they will have `?tup<element_tuple_index>` arguments starting
@@ -146,13 +146,13 @@ type 'a u =
 
 will derive the following factory functions:
 ```ocaml
-val factory_a : unit -> t
+val a_factory : unit -> t
 
-val factory_b : ?tup0: string -> unit -> t
+val b_factory : ?tup0: string -> unit -> t
 
-val factory_u_c : ?tup0: int -> ?tup1: 'a -> 'a u
+val u_c_factory : ?tup0: int -> ?tup1: 'a -> 'a u
 
-val factory_u_d : ?some_int: int -> ?some_list: 'a list -> 'a u
+val u_d_factory : ?some_int: int -> ?some_list: 'a list -> 'a u
 ```
 
 ### default
@@ -167,8 +167,8 @@ own whereas for custom types we expect to find one in the right place. Eg for a 
 can use it by attaching `[@@deriving default]` to type definitions.
 
 It can be used with most core types, record and variant types. It will derive a single value
-which name will be based on the type name in the same fashion as factory functions' names, ie
-`default` or `default_<type_name>`.
+which name will be based on the type name, ie `default` for type `t` or `default_<type_name>`
+otherwise.
 
 In some cases it's impossible to derive a default from a parametrized type. For example you can't
 derive a default value from the following type:

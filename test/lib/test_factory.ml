@@ -7,7 +7,7 @@ let test__name_from_type_name =
   in
   "_name_from_type_name" >:::
   [ "Is factory" >:: test ~input:"t" ~expected:"factory"
-  ; "Uses right suffix" >:: test ~input:"a" ~expected:"factory_a"
+  ; "Uses right prefix" >:: test ~input:"a" ~expected:"a_factory"
   ]
 
 let test__name_from_type_and_constructor_name =
@@ -18,9 +18,9 @@ let test__name_from_type_and_constructor_name =
     assert_equal ~ctxt ~cmp:[%eq: string] ~printer:[%show: string] expected actual
   in
   "_name_from_type_and_constructor_name" >:::
-  [ "Handle type t" >:: test ~type_name:"t" ~constructor_name:"A" ~expected:"factory_a"
-  ; "Handle other type names" >:: test ~type_name:"u" ~constructor_name:"A" ~expected:"factory_u_a"
-  ; "Lowercase ctr name" >:: test ~type_name:"u" ~constructor_name:"RSA" ~expected:"factory_u_rsa"
+  [ "Handle type t" >:: test ~type_name:"t" ~constructor_name:"A" ~expected:"a_factory"
+  ; "Handle other type names" >:: test ~type_name:"u" ~constructor_name:"A" ~expected:"u_a_factory"
+  ; "Lowercase ctr name" >:: test ~type_name:"u" ~constructor_name:"RSA" ~expected:"u_rsa_factory"
   ]
 
 let suite =

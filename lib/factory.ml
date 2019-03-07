@@ -1,11 +1,21 @@
 open Ppxlib
 
-let _name_from_type_name type_name =
-  Printf.sprintf "factory%s" @@ Util.suffix_from_type_name type_name
+let prefix ~type_name ?constructor_name () =
+  let type_prefix = Util.affix_from_type_name ~kind:`Prefix type_name in
+  let constructor_prefix =
+    match constructor_name with
+    | None -> ""
+    | Some constructor_name -> (String.lowercase_ascii constructor_name) ^ "_"
+  in
+  Printf.sprintf "%s%s" type_prefix constructor_prefix
+
+let factory_name prefix = Printf.sprintf "%sfactory" prefix
 
 let _name_from_type_and_constructor_name ~type_name ~constructor_name =
-  let base_factory_name = _name_from_type_name type_name in
-  Printf.sprintf "%s_%s" base_factory_name (String.lowercase_ascii constructor_name)
+  factory_name (prefix ~type_name ~constructor_name ())
+
+let _name_from_type_name type_name =
+  factory_name (prefix ~type_name ())
 
 let arg_names_from_labels labels =
   List.map (fun {pld_name; _} -> pld_name.txt) labels
