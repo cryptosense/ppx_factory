@@ -21,3 +21,10 @@ depends: [
 ]
 tags: ["org:cryptosense"]
 synopsis: "PPX to derive factories and default values"
+description: """
+ppx_factory is a ppx deriver that builds factory method from record and variant type
+definitions.
+
+Factory methods allow you to build test values by only supplying the parts that are relevant
+to your tests.
+"""
