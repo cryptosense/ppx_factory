@@ -198,20 +198,3 @@ On the other hand it can derive a default value that as type `('a, 'b) t2` such 
 It is worth noting that **you should never rely on what the actual value of such a default is** as
 it is susceptible to change in minor or even patch releases. If your tests depend on a default value
 it means you're not using factories right!
-
-## Known issues
-
-### Silent failure on abstract types
-
-If you try to derive factory functions from an abstract type, like in the following example:
-```ocaml
-type t1
-[@@deriving factory]
-
-type t2 = Some_external_module.t
-[@@deriving factory]
-```
-
-it will silently produce nothing. This is due to a current limitation in `ppxlib` combined with a
-necessity to be compatible with `ppx_import`. We're working on fixing that and hope to be able to
-provide users with an approriate error message in those cases instead.
