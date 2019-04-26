@@ -8,6 +8,11 @@ val affix_from_type_name : kind: [`Prefix | `Suffix] -> string -> string
 *)
 val core_type_from_type_decl : loc: Location.t -> type_declaration -> core_type
 
+(** Return whether the deriver is used in the context of ocamldep from the given
+    expansion context
+*)
+val is_ocamldep : Expansion_context.Deriver.t -> bool
+
 module Expr : sig
   (** Return the expression corresponding to the given variable name *)
   val var : loc: Location.t -> string -> expression

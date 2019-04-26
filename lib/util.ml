@@ -14,6 +14,11 @@ let core_type_from_type_decl ~loc {ptype_name; ptype_params; _} =
   let type_lident = {txt = Lident ptype_name.txt; loc} in
   Ast_builder.Default.ptyp_constr ~loc type_lident constr
 
+let is_ocamldep ctxt =
+  let omp_config = Expansion_context.Deriver.omp_config ctxt in
+  let tool_name = omp_config.Migrate_parsetree.Driver.tool_name in
+  String.equal tool_name "ocamldep"
+
 module Expr = struct
   let var ~loc var_name = Ast_builder.Default.pexp_ident ~loc {txt = Lident var_name; loc}
   let constructor ~loc ~constructor_name expr =
