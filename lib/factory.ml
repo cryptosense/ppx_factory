@@ -101,15 +101,17 @@ module Str = struct
     | Pcstr_tuple types -> from_constructor_tuple ~loc ~factory_name ~constructor_name types
     | Pcstr_record labels -> from_constructor_record ~loc ~factory_name ~constructor_name labels
 
-  let from_td ~loc {ptype_name = {txt = type_name; _}; ptype_kind; _} =
+  let from_td ~is_ocamldep ~loc {ptype_name = {txt = type_name; _}; ptype_kind; _} =
     match ptype_kind with
     | Ptype_record labels -> from_record ~loc ~type_name ~labels
     | Ptype_variant constructors -> List.map (from_constructor ~loc ~type_name) constructors
-    | Ptype_abstract -> []
+    | Ptype_abstract -> if is_ocamldep then [] else Raise.Factory.unhandled_type_kind ~loc "abstract"
     | Ptype_open -> Raise.Factory.unhandled_type_kind ~loc "open"
 
-  let from_type_decl ~loc ~path:_ (_rec_flag, tds) =
-    List.flatten @@ List.map (from_td ~loc) tds
+  let from_type_decl ~ctxt (_rec_flag, tds) =
+    let loc = Expansion_context.Deriver.derived_item_loc ctxt in
+    let is_ocamldep = Util.is_ocamldep ctxt in
+    List.flatten @@ List.map (from_td ~is_ocamldep ~loc) tds
 end
 
 module Sig = struct
@@ -165,20 +167,22 @@ module Sig = struct
     | Pcstr_tuple types -> from_constructor_tuple ~loc ~factory_name ~return_type types
     | Pcstr_record labels -> from_labels ~loc ~factory_name ~return_type labels
 
-  let from_td ~loc ({ptype_name = {txt = type_name; _}; ptype_kind; _} as td) =
+  let from_td ~is_ocamldep ~loc ({ptype_name = {txt = type_name; _}; ptype_kind; _} as td) =
     let return_type = Util.core_type_from_type_decl ~loc td in
     match ptype_kind with
     | Ptype_record labels -> from_record ~loc ~type_name ~return_type ~labels
     | Ptype_variant ctors -> List.map (from_constructor ~loc ~type_name ~return_type) ctors
-    | Ptype_abstract -> []
+    | Ptype_abstract -> if is_ocamldep then [] else Raise.Factory.unhandled_type_kind ~loc "abstract"
     | Ptype_open -> Raise.Factory.unhandled_type_kind ~loc "open"
 
-  let from_type_decl ~loc ~path:_ (_rec_flag, tds) =
-    List.flatten @@ List.map (from_td ~loc) tds
+  let from_type_decl ~ctxt (_rec_flag, tds) =
+    let loc = Expansion_context.Deriver.derived_item_loc ctxt in
+    let is_ocamldep = Util.is_ocamldep ctxt in
+    List.flatten @@ List.map (from_td ~is_ocamldep ~loc) tds
 end
 
 let from_str_type_decl =
-  Deriving.Generator.make_noarg Str.from_type_decl
+  Deriving.Generator.V2.make_noarg Str.from_type_decl
 
 let from_sig_type_decl =
-  Deriving.Generator.make_noarg Sig.from_type_decl
+  Deriving.Generator.V2.make_noarg Sig.from_type_decl

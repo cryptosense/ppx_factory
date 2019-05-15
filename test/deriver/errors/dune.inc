@@ -42,3 +42,25 @@
   (name runtest)
   (action (diff default_str_unspecified_type.expected default_str_unspecified_type.actual))
 )
+
+(library
+  (name factory_abstract_type)
+  (modules factory_abstract_type)
+  (preprocess (pps ppx_factory))
+)
+
+(rule
+  (targets factory_abstract_type.actual)
+  (deps (:pp pp.exe) (:input factory_abstract_type.ml))
+  (action
+    (with-stderr-to
+      %{targets}
+      (bash "./%{pp} -no-color --impl %{input} || true")
+    )
+  )
+)
+
+(alias
+  (name runtest)
+  (action (diff factory_abstract_type.expected factory_abstract_type.actual))
+)
