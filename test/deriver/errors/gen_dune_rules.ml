@@ -21,9 +21,18 @@ let output_stanzas filename =
 
 (alias
   (name runtest)
+  (enabled_if (< %%{ocaml_version} 4.08))
+  (action (diff %s.old.expected %s.actual))
+)
+
+(alias
+  (name runtest)
+  (enabled_if (>= %%{ocaml_version} 4.08))
   (action (diff %s.expected %s.actual))
 )
 |}
+    base
+    base
     base
     base
     base
