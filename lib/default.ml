@@ -51,16 +51,17 @@ let rec expr_from_core_type ~loc {ptyp_desc; ptyp_loc; _} =
     )
   | Ptyp_var _ -> Loc_err.as_result ~loc:ptyp_loc ~msg:"can't derive default for unspecified type"
   | _ -> Loc_err.as_result ~loc:ptyp_loc ~msg:"can't derive default from this type"
-and expr_from_poly_variant_field ~ptyp_loc ~loc = function
+and expr_from_poly_variant_field ~ptyp_loc ~loc row_field =
+  match row_field.prf_desc with
   | Rinherit _ ->
     Loc_err.as_result ~loc:ptyp_loc ~msg:"can't derive default for inherited variant"
-  | Rtag ({txt = ctor; _}, _attributes, true (* accept constant ctor *), _) ->
+  | Rtag ({txt = ctor; _}, true (* accept constant ctor *), _) ->
     Ok (Ast_builder.Default.pexp_variant ~loc ctor None)
-  | Rtag ({txt = ctor; _}, _attributes, false, core_type::_) ->
+  | Rtag ({txt = ctor; _}, false, core_type::_) ->
     let open Util.Result_ in
     expr_from_core_type ~loc core_type >|= fun expr ->
     Ast_builder.Default.pexp_variant ~loc ctor (Some expr)
-  | Rtag (_label, _attributes, false, []) ->
+  | Rtag (_label, false, []) ->
     (* cannot be associated with an empty list of types and not accept a constant ctor *)
     assert false
 

@@ -18,6 +18,13 @@
 
 (alias
   (name runtest)
+  (enabled_if (< %{ocaml_version} 4.08))
+  (action (diff default_str_no_manifest.old.expected default_str_no_manifest.actual))
+)
+
+(alias
+  (name runtest)
+  (enabled_if (>= %{ocaml_version} 4.08))
   (action (diff default_str_no_manifest.expected default_str_no_manifest.actual))
 )
 
@@ -40,6 +47,13 @@
 
 (alias
   (name runtest)
+  (enabled_if (< %{ocaml_version} 4.08))
+  (action (diff default_str_unspecified_type.old.expected default_str_unspecified_type.actual))
+)
+
+(alias
+  (name runtest)
+  (enabled_if (>= %{ocaml_version} 4.08))
   (action (diff default_str_unspecified_type.expected default_str_unspecified_type.actual))
 )
 
@@ -62,5 +76,12 @@
 
 (alias
   (name runtest)
+  (enabled_if (< %{ocaml_version} 4.08))
+  (action (diff factory_abstract_type.old.expected factory_abstract_type.actual))
+)
+
+(alias
+  (name runtest)
+  (enabled_if (>= %{ocaml_version} 4.08))
   (action (diff factory_abstract_type.expected factory_abstract_type.actual))
 )

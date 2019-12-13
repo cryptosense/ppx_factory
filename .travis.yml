@@ -10,3 +10,4 @@ env:
     - DISTRO=debian-stable
   matrix:
     - OCAML_VERSION=4.07
+    - OCAML_VERSION=4.08
