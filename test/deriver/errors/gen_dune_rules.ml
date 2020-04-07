@@ -14,7 +14,7 @@ let output_stanzas filename =
   (action
     (with-stderr-to
       %%{targets}
-      (bash "./%%{pp} -no-color --impl %%{input} || true")
+      (bash "OCAML_COLOR=never ./%%{pp} --impl %%{input} || true")
     )
   )
 )
@@ -22,15 +22,23 @@ let output_stanzas filename =
 (alias
   (name runtest)
   (enabled_if (< %%{ocaml_version} 4.08))
-  (action (diff %s.old.expected %s.actual))
+  (action (diff %s.407.expected %s.actual))
 )
 
 (alias
   (name runtest)
-  (enabled_if (>= %%{ocaml_version} 4.08))
+  (enabled_if (and (>= %%{ocaml_version} 4.08) (< %%{ocaml_version} 4.09)))
+  (action (diff %s.408.expected %s.actual))
+)
+
+(alias
+  (name runtest)
+  (enabled_if (>= %%{ocaml_version} 4.09))
   (action (diff %s.expected %s.actual))
 )
 |}
+    base
+    base
     base
     base
     base

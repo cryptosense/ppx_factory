@@ -11,7 +11,7 @@
   (action
     (with-stderr-to
       %{targets}
-      (bash "./%{pp} -no-color --impl %{input} || true")
+      (bash "OCAML_COLOR=never ./%{pp} --impl %{input} || true")
     )
   )
 )
@@ -19,12 +19,18 @@
 (alias
   (name runtest)
   (enabled_if (< %{ocaml_version} 4.08))
-  (action (diff default_str_no_manifest.old.expected default_str_no_manifest.actual))
+  (action (diff default_str_no_manifest.407.expected default_str_no_manifest.actual))
 )
 
 (alias
   (name runtest)
-  (enabled_if (>= %{ocaml_version} 4.08))
+  (enabled_if (and (>= %{ocaml_version} 4.08) (< %{ocaml_version} 4.09)))
+  (action (diff default_str_no_manifest.408.expected default_str_no_manifest.actual))
+)
+
+(alias
+  (name runtest)
+  (enabled_if (>= %{ocaml_version} 4.09))
   (action (diff default_str_no_manifest.expected default_str_no_manifest.actual))
 )
 
@@ -40,7 +46,7 @@
   (action
     (with-stderr-to
       %{targets}
-      (bash "./%{pp} -no-color --impl %{input} || true")
+      (bash "OCAML_COLOR=never ./%{pp} --impl %{input} || true")
     )
   )
 )
@@ -48,12 +54,18 @@
 (alias
   (name runtest)
   (enabled_if (< %{ocaml_version} 4.08))
-  (action (diff default_str_unspecified_type.old.expected default_str_unspecified_type.actual))
+  (action (diff default_str_unspecified_type.407.expected default_str_unspecified_type.actual))
 )
 
 (alias
   (name runtest)
-  (enabled_if (>= %{ocaml_version} 4.08))
+  (enabled_if (and (>= %{ocaml_version} 4.08) (< %{ocaml_version} 4.09)))
+  (action (diff default_str_unspecified_type.408.expected default_str_unspecified_type.actual))
+)
+
+(alias
+  (name runtest)
+  (enabled_if (>= %{ocaml_version} 4.09))
   (action (diff default_str_unspecified_type.expected default_str_unspecified_type.actual))
 )
 
@@ -69,7 +81,7 @@
   (action
     (with-stderr-to
       %{targets}
-      (bash "./%{pp} -no-color --impl %{input} || true")
+      (bash "OCAML_COLOR=never ./%{pp} --impl %{input} || true")
     )
   )
 )
@@ -77,11 +89,17 @@
 (alias
   (name runtest)
   (enabled_if (< %{ocaml_version} 4.08))
-  (action (diff factory_abstract_type.old.expected factory_abstract_type.actual))
+  (action (diff factory_abstract_type.407.expected factory_abstract_type.actual))
 )
 
 (alias
   (name runtest)
-  (enabled_if (>= %{ocaml_version} 4.08))
+  (enabled_if (and (>= %{ocaml_version} 4.08) (< %{ocaml_version} 4.09)))
+  (action (diff factory_abstract_type.408.expected factory_abstract_type.actual))
+)
+
+(alias
+  (name runtest)
+  (enabled_if (>= %{ocaml_version} 4.09))
   (action (diff factory_abstract_type.expected factory_abstract_type.actual))
 )
