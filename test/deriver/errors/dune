@@ -24,7 +24,7 @@
     (with-stdout-to
       %{targets}
       (run %{gen})
-    ) 
+    )
   )
 )
 
