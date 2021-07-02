@@ -10,7 +10,7 @@ definitions.
 Factories are functions that let you build test data while only specifying the parts that are
 relevant to your tests.
 
-`ppx_factory` alows you to derive such functions from type definitions.
+`ppx_factory` allows you to derive such functions from type definitions.
 
 Let's take a very basic example. Consider the following type and function:
 ```ocaml
@@ -167,7 +167,7 @@ own whereas for custom types we expect to find one in the right place. Eg for a 
 can use it by attaching `[@@deriving default]` to type definitions.
 
 It can be used with most core types, record and variant types. It will derive a single value
-which name will be based on the type name, ie `default` for type `t` or `default_<type_name>`
+which name will be based on the type name, i.e. `default` for type `t` or `default_<type_name>`
 otherwise.
 
 In some cases it's impossible to derive a default from a parametrized type. For example you can't
